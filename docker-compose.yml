@@ -1,0 +1,36 @@
+# PepperAI - Bell Pepper Detection & Quality Assessment System
+# Docker Compose configuration for easy deployment
+
+version: '3.8'
+
+services:
+  pepperai:
+    build: .
+    container_name: pepperai-app
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./uploads:/app/uploads
+      - ./results:/app/results
+    environment:
+      - FLASK_ENV=production
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Optional: Add Redis for caching (uncomment if needed)
+  # redis:
+  #   image: redis:alpine
+  #   container_name: pepperai-redis
+  #   ports:
+  #     - "6379:6379"
+  #   restart: unless-stopped
+
+networks:
+  default:
+    name: pepperai-network

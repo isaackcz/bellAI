@@ -1,0 +1,389 @@
+/* Advanced AI Analysis Styling */
+.advanced-analysis-container {
+    margin: 1.5rem 0;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border: 1px solid rgba(99, 102, 241, 0.1);
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.advanced-analysis-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid rgba(99, 102, 241, 0.1);
+}
+
+.advanced-analysis-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #374151;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.advanced-analysis-header i {
+    font-size: 1.5rem;
+    color: #6366f1;
+    animation: pulse 2s infinite;
+}
+
+.advanced-analysis-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.25rem;
+}
+
+/* Individual Analysis Sections */
+.ripeness-analysis,
+.nutrition-analysis,
+.shelf-life-analysis,
+.market-analysis {
+    background: white;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 10px;
+    padding: 1.25rem;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.ripeness-analysis:hover,
+.nutrition-analysis:hover,
+.shelf-life-analysis:hover,
+.market-analysis:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    border-color: rgba(99, 102, 241, 0.2);
+}
+
+.analysis-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    font-weight: 600;
+    color: #374151;
+}
+
+.analysis-header h4 {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.analysis-header i {
+    color: #6366f1;
+    font-size: 1.1rem;
+}
+
+/* Ripeness Analysis */
+.ripeness-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.ripeness-stage {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    border-radius: 8px;
+    font-weight: 600;
+}
+
+.ripeness-stage.unripe {
+    background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+    color: #166534;
+}
+
+.ripeness-stage.ripening {
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    color: #92400e;
+}
+
+.ripeness-stage.ripe {
+    background: linear-gradient(135deg, #fed7d7, #fc8181);
+    color: #c53030;
+}
+
+.ripeness-percent {
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.harvest-timing,
+.days-to-optimal {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: #6b7280;
+}
+
+.harvest-timing i,
+.days-to-optimal i {
+    color: #8b5cf6;
+}
+
+/* Nutrition Analysis */
+.nutrition-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.nutrition-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    gap: 0.75rem;
+}
+
+.nutrition-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 0.75rem;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.nutrition-label {
+    font-size: 0.75rem;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.25rem;
+}
+
+.nutrition-value {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #059669;
+}
+
+.nutrition-highlights {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.highlight-badge {
+    background: linear-gradient(135deg, #10b981, #34d399);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+/* Shelf Life Analysis */
+.shelf-life-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.storage-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.storage-option:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+}
+
+.storage-option.best {
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    border-color: #f59e0b;
+}
+
+.storage-option.best:hover {
+    background: linear-gradient(135deg, #fde68a, #fcd34d);
+}
+
+.storage-type {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+    color: #374151;
+}
+
+.storage-option i {
+    color: #6366f1;
+    font-size: 1.1rem;
+}
+
+.storage-option.best i {
+    color: #f59e0b;
+}
+
+.storage-duration {
+    font-weight: 700;
+    color: #059669;
+    background: rgba(5, 150, 105, 0.1);
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+}
+
+/* Market Analysis */
+.market-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.market-grade {
+    padding: 1rem;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.market-grade.premium {
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    border: 2px solid #f59e0b;
+}
+
+.market-grade.grade-a {
+    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+    border: 2px solid #3b82f6;
+}
+
+.market-grade.grade-b {
+    background: linear-gradient(135deg, #f3e8ff, #e9d5ff);
+    border: 2px solid #8b5cf6;
+}
+
+.market-grade.grade-c {
+    background: linear-gradient(135deg, #fecaca, #fca5a5);
+    border: 2px solid #ef4444;
+}
+
+.grade-name {
+    display: block;
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.grade-description {
+    font-size: 0.85rem;
+    color: #6b7280;
+}
+
+.market-price {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #166534;
+}
+
+.market-price i {
+    color: #059669;
+}
+
+/* Responsive Advanced Analysis */
+@media (max-width: 1024px) {
+    .advanced-analysis-container {
+        padding: 1.25rem;
+        margin: 1.25rem 0;
+    }
+    
+    .advanced-analysis-grid {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+    }
+    
+    .ripeness-analysis,
+    .nutrition-analysis,
+    .shelf-life-analysis,
+    .market-analysis {
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .advanced-analysis-container {
+        padding: 1rem;
+        margin: 1rem 0;
+    }
+    
+    .advanced-analysis-grid {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+    
+    .advanced-analysis-header h3 {
+        font-size: 1.1rem;
+    }
+    
+    .nutrition-stats {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .nutrition-item {
+        padding: 0.5rem;
+    }
+    
+    .nutrition-highlights {
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .advanced-analysis-container {
+        padding: 0.75rem;
+        margin: 0.75rem 0;
+    }
+    
+    .advanced-analysis-header {
+        margin-bottom: 1rem;
+    }
+    
+    .analysis-header h4 {
+        font-size: 0.9rem;
+    }
+    
+    .nutrition-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .highlight-badge {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.5rem;
+    }
+    
+    .storage-option {
+        flex-direction: column;
+        text-align: center;
+        gap: 0.5rem;
+    }
+    
+    .market-grade {
+        padding: 0.75rem;
+    }
+}

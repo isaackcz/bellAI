@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover" />
+    <title>PepperAI - Advanced Bell Pepper Recognition</title>
+    <meta name="description" content="AI-powered bell pepper quality assessment using advanced computer vision and disease detection">
+    
+    <!-- PWA Meta Tags -->
+    <link rel="icon" type="image/svg+xml" href="/static/images/logo.svg">
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#4f46e5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="PepperAI">
+    <link rel="apple-touch-icon" href="/static/images/icon-192.png">
+    
+    <!-- Mobile Optimizations -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="PepperAI">
+    <meta name="msapplication-TileColor" content="#4f46e5">
+    <meta name="msapplication-TileImage" content="/static/images/icon-192.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/styles.css" />
+    <link rel="stylesheet" href="/static/css/advanced-styles.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Animated Background Elements -->
+        <div class="background-elements">
+            <div class="floating-shapes">
+                <div class="shape shape-1"></div>
+                <div class="shape shape-2"></div>
+                <div class="shape shape-3"></div>
+                <div class="shape shape-4"></div>
+                <div class="shape shape-5"></div>
+                <div class="shape shape-6"></div>
+            </div>
+            <div class="grid-pattern"></div>
+        </div>
+
+        <header class="hero-section">
+            <div class="hero-content">
+                <div class="logo-container">
+                    <div class="logo-icon">
+                        <img src="/static/images/logo.svg" alt="PepperAI Logo" class="logo-image">
+                    </div>
+                    <h1>PepperAI</h1>
+                </div>
+                <p class="subtitle">Multi-model AI system: General Detection + Bell Pepper Specialist + ANFIS Quality Assessment</p>
+                <div class="feature-badges">
+                    <span class="badge"><i class="fas fa-eye"></i> General Detection</span>
+                    <span class="badge"><i class="fas fa-pepper-hot"></i> Bell Pepper Specialist</span>
+                    <span class="badge"><i class="fas fa-brain"></i> ANFIS Quality</span>
+                </div>
+            </div>
+            
+            <!-- Decorative Elements -->
+            <div class="hero-decorations">
+                <div class="decoration-circle decoration-1"></div>
+                <div class="decoration-circle decoration-2"></div>
+                <div class="decoration-circle decoration-3"></div>
+                <svg class="decorative-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <pattern id="dots" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+                            <circle cx="10" cy="10" r="1" fill="rgba(99, 102, 241, 0.1)"/>
+                        </pattern>
+                    </defs>
+                    <rect width="200" height="200" fill="url(#dots)"/>
+                </svg>
+            </div>
+        </header>
+        
+        <main class="main-content">
+            <div class="controls">
+                <div class="card camera-card">
+                    <div class="card-decoration">
+                        <div class="pulse-ring"></div>
+                        <div class="pulse-ring delay-1"></div>
+                        <div class="pulse-ring delay-2"></div>
+                    </div>
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fas fa-camera"></i>
+                            <span>Live Camera</span>
+                        </div>
+                        <div class="card-subtitle">Capture real-time images for analysis</div>
+                    </div>
+                    <div class="video-container">
+                        <video id="video" autoplay playsinline></video>
+                        <div class="video-overlay" id="videoOverlay">
+                            <i class="fas fa-camera"></i>
+                            <span>Camera not active</span>
+                        </div>
+                    </div>
+                    <div class="btn-group">
+                        <button id="startCamera" class="btn btn-primary pulse" aria-label="Start camera">
+                            <i class="fas fa-play"></i> 
+                            <span>Start Camera</span>
+                        </button>
+                        <button id="captureBtn" class="btn btn-success" disabled aria-label="Capture image">
+                            <i class="fas fa-camera"></i> 
+                            <span>Capture</span>
+                        </button>
+                        <button id="stopCamera" class="btn btn-secondary" disabled aria-label="Stop camera">
+                            <i class="fas fa-stop"></i> 
+                            <span>Stop</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="card upload-card">
+                    <div class="card-decoration">
+                        <div class="upload-animation">
+                            <div class="upload-line"></div>
+                            <div class="upload-line delay-1"></div>
+                            <div class="upload-line delay-2"></div>
+                        </div>
+                    </div>
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fas fa-upload"></i>
+                            <span>Upload Image</span>
+                        </div>
+                        <div class="card-subtitle">Upload existing images for analysis</div>
+                    </div>
+                    <div class="file-input-container">
+                        <input type="file" id="fileInput" class="file-input" accept="image/*" aria-label="Select image file" />
+                        <label for="fileInput" class="file-label">
+                            <div class="upload-icon">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                            </div>
+                            <div class="upload-text">
+                                <span class="upload-main">Choose a file or drag it here</span>
+                                <small class="upload-sub">Supported formats: JPG, PNG, GIF, WebP</small>
+                            </div>
+                        </label>
+                    </div>
+                    <button id="uploadBtn" class="btn btn-primary" disabled aria-label="Analyze uploaded image">
+                        <i class="fas fa-search"></i> 
+                        <span>Analyze Image</span>
+                    </button>
+                </div>
+            </div>
+        </main>
+        
+        <section class="results-section">
+            <div class="card preview-section">
+                <div class="card-decoration">
+                    <div class="analysis-animation">
+                        <div class="scan-line"></div>
+                        <div class="data-points">
+                            <div class="data-point"></div>
+                            <div class="data-point"></div>
+                            <div class="data-point"></div>
+                            <div class="data-point"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-chart-bar"></i>
+                        <span>Analysis Results</span>
+                    </div>
+                    <div class="card-subtitle">AI-powered bell pepper detection and quality assessment</div>
+                </div>
+                
+                <div id="status" class="status-indicator">
+                    <i class="fas fa-info-circle"></i>
+                    <span>Ready to process images</span>
+                </div>
+                
+                <canvas id="canvas" style="display:none"></canvas>
+                
+                <div class="image-container" id="imageContainer" style="display:none">
+                    <img id="previewImg" alt="Detection result" />
+                    <div class="image-overlay">
+                        <div class="image-stats">
+                            <span class="stat-item">
+                                <i class="fas fa-eye"></i>
+                                <span id="objectCount">0</span> objects
+                            </span>
+                            <span class="stat-item">
+                                <i class="fas fa-pepper-hot"></i>
+                                <span id="pepperCount">0</span> peppers
+                            </span>
+                            <span class="stat-item">
+                                <i class="fas fa-heartbeat"></i>
+                                <span id="healthyCount">0</span> healthy
+                            </span>
+                            <span class="stat-item">
+                                <i class="fas fa-clock"></i>
+                                <span id="processingTime">0ms</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- General Object Detection Results -->
+                <div class="model-section" id="generalSection" style="display:none">
+                    <div class="model-header">
+                        <div class="model-icon">
+                            <i class="fas fa-eye"></i>
+                        </div>
+                        <div>
+                            <h3>General Object Detection</h3>
+                            <p>YOLOv8 detecting 80 COCO classes</p>
+                        </div>
+                    </div>
+                    <div id="generalObjects" class="detections-list"></div>
+                </div>
+                
+                <!-- Bell Pepper Detection Results -->
+                <div class="model-section" id="pepperSection" style="display:none">
+                    <div class="model-header">
+                        <div class="model-icon">
+                            <i class="fas fa-pepper-hot"></i>
+                        </div>
+                        <div>
+                            <h3>Bell Pepper Detection & Health Assessment</h3>
+                            <p>Specialized YOLOv8 + Advanced Quality & Disease Analysis</p>
+                        </div>
+                    </div>
+                    <div id="bellPeppers" class="detections-list"></div>
+                </div>
+            </div>
+        </section>
+    </div>
+    
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <div class="footer-logo">
+                    <img src="/static/images/logo.svg" alt="PepperAI Logo" class="footer-logo-image">
+                    <span>PepperAI</span>
+                </div>
+                <p>Advanced AI-powered bell pepper quality assessment</p>
+            </div>
+            <div class="footer-tech">
+                <span class="tech-badge">YOLOv8 General</span>
+                <span class="tech-badge">YOLOv8 Specialized</span>
+                <span class="tech-badge">ANFIS</span>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 PepperAI. Powered by cutting-edge machine learning technology.</p>
+        </div>
+    </footer>
+    
+    <script src="/static/js/script.js"></script>
+    
+    <!-- PWA Registration Script -->
+    <script>
+        // Register Service Worker for PWA functionality
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', async () => {
+                try {
+                    const registration = await navigator.serviceWorker.register('/static/sw.js');
+                    console.log('✅ Service Worker registered successfully:', registration);
+                    
+                    // Check for updates
+                    registration.addEventListener('updatefound', () => {
+                        const newWorker = registration.installing;
+                        if (newWorker) {
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    showUpdateAvailable();
+                                }
+                            });
+                        }
+                    });
+                } catch (error) {
+                    console.error('❌ Service Worker registration failed:', error);
+                }
+            });
+        }
+
+        // PWA Install Prompt
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (event) => {
+            console.log('💾 PWA install prompt available');
+            event.preventDefault();
+            deferredPrompt = event;
+            showInstallPrompt();
+        });
+
+        function showInstallPrompt() {
+            // Create install banner
+            const installBanner = document.createElement('div');
+            installBanner.id = 'installBanner';
+            installBanner.innerHTML = `
+                <div class="install-banner">
+                    <div class="install-content">
+                        <i class="fas fa-download"></i>
+                        <span>Install PepperAI for offline analysis</span>
+                        <button onclick="installPWA()" class="install-btn">Install</button>
+                        <button onclick="dismissInstall()" class="dismiss-btn">×</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(installBanner);
+        }
+
+        async function installPWA() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const result = await deferredPrompt.userChoice;
+                console.log('🎯 PWA install result:', result.outcome);
+                deferredPrompt = null;
+                dismissInstall();
+            }
+        }
+
+        function dismissInstall() {
+            const banner = document.getElementById('installBanner');
+            if (banner) banner.remove();
+        }
+
+        function showUpdateAvailable() {
+            const updateBanner = document.createElement('div');
+            updateBanner.innerHTML = `
+                <div class="update-banner">
+                    <span>New version available!</span>
+                    <button onclick="updateApp()">Update</button>
+                </div>
+            `;
+            document.body.appendChild(updateBanner);
+        }
+
+        function updateApp() {
+            window.location.reload();
+        }
+
+        // Enhanced mobile detection and features
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+        
+        if (isMobile) {
+            document.body.classList.add('mobile-device');
+            
+            // Add mobile-specific enhancements
+            document.addEventListener('DOMContentLoaded', () => {
+                // Prevent zoom on input focus
+                const inputs = document.querySelectorAll('input, textarea, select');
+                inputs.forEach(input => {
+                    input.addEventListener('focus', () => {
+                        if (isMobile) {
+                            const viewport = document.querySelector('meta[name=viewport]');
+                            viewport.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no');
+                        }
+                    });
+                    
+                    input.addEventListener('blur', () => {
+                        if (isMobile) {
+                            const viewport = document.querySelector('meta[name=viewport]');
+                            viewport.setAttribute('content', 'width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover');
+                        }
+                    });
+                });
+                
+                // Add haptic feedback for mobile interactions
+                if ('vibrate' in navigator) {
+                    const buttons = document.querySelectorAll('button, .btn');
+                    buttons.forEach(button => {
+                        button.addEventListener('click', () => {
+                            navigator.vibrate(50); // Short vibration feedback
+                        });
+                    });
+                }
+            });
+        }
+
+        if (isStandalone) {
+            document.body.classList.add('standalone-app');
+            console.log('📱 Running as installed PWA');
+        }
+    </script>
+    
+    <!-- PWA Install Banner Styles -->
+    <style>
+        .install-banner, .update-banner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            color: white;
+            padding: 1rem;
+            z-index: 10000;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            animation: slideDown 0.3s ease-out;
+        }
+        
+        .install-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .install-btn, .update-banner button {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .install-btn:hover, .update-banner button:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-1px);
+        }
+        
+        .dismiss-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.25rem;
+            opacity: 0.7;
+        }
+        
+        .dismiss-btn:hover {
+            opacity: 1;
+        }
+        
+        @keyframes slideDown {
+            from { transform: translateY(-100%); }
+            to { transform: translateY(0); }
+        }
+        
+        /* Mobile-specific styles */
+        .mobile-device .container {
+            padding: 1rem 0.5rem;
+        }
+        
+        .standalone-app {
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        
+        @media (max-width: 768px) {
+            .install-content {
+                flex-direction: column;
+                gap: 0.5rem;
+                text-align: center;
+            }
+            
+            .install-content span {
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</body>
+</html>

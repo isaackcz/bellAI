@@ -1,0 +1,11 @@
+names:
+- bell_pepper_1
+- bell_pepper_2
+- bell_pepper_3
+- bell_pepper_4
+- bell_pepper_5
+- bell_pepper_6
+nc: 6
+path: /content
+train: images/train
+val: images/val
