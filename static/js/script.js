@@ -104,7 +104,7 @@
             cards.forEach(card => {
                 card.addEventListener('mouseenter', () => {
                     // Add subtle glow effect
-                    card.style.boxShadow = '0 25px 50px -12px rgba(99, 102, 241, 0.25)';
+                    card.style.boxShadow = '0 8px 24px rgba(25, 24, 59, 0.12)';
                 });
                 
                 card.addEventListener('mouseleave', () => {
@@ -674,18 +674,159 @@
             await sendForm(fd);
         }
 
+        // Progress bar functions
+        function showProgressBar() {
+            // Create progress bar container if it doesn't exist
+            let progressContainer = document.getElementById('progressContainer');
+            if (!progressContainer) {
+                progressContainer = document.createElement('div');
+                progressContainer.id = 'progressContainer';
+                progressContainer.style.cssText = `
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: var(--card-bg);
+                    backdrop-filter: blur(20px);
+                    padding: 2rem;
+                    border-radius: var(--border-radius);
+                    box-shadow: var(--box-shadow-lg);
+                    z-index: 9999;
+                    min-width: 400px;
+                    max-width: 90vw;
+                `;
+                
+                progressContainer.innerHTML = `
+                    <div style="text-align: center; margin-bottom: 1.5rem;">
+                        <div style="width: 60px; height: 60px; background: var(--primary-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; animation: pulse 2s infinite;">
+                            <i class="fas fa-brain" style="font-size: 1.75rem; color: var(--primary);"></i>
+                        </div>
+                        <h3 style="margin: 0 0 0.5rem 0; color: var(--dark); font-size: 1.25rem;">Analyzing Bell Peppers</h3>
+                        <p id="progressText" style="color: var(--secondary); margin: 0; font-size: 0.9rem;">Initializing...</p>
+                    </div>
+                    
+                    <div style="background: var(--gray-light); border-radius: 50px; height: 12px; overflow: hidden; margin-bottom: 1rem; position: relative;">
+                        <div id="progressBar" style="height: 100%; background: linear-gradient(90deg, var(--primary), var(--info)); border-radius: 50px; width: 0%; transition: width 0.3s ease; position: relative;">
+                            <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent); animation: shimmer 1.5s infinite;"></div>
+                        </div>
+                    </div>
+                    
+                    <div id="progressSteps" style="display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.85rem;">
+                        <div id="step1" style="display: flex; align-items: center; gap: 0.5rem; color: var(--secondary);">
+                            <i class="fas fa-circle-notch fa-spin"></i>
+                            <span>Uploading image...</span>
+                        </div>
+                        <div id="step2" style="display: flex; align-items: center; gap: 0.5rem; color: var(--gray); opacity: 0.5;">
+                            <i class="fas fa-circle"></i>
+                            <span>Detecting objects...</span>
+                        </div>
+                        <div id="step3" style="display: flex; align-items: center; gap: 0.5rem; color: var(--gray); opacity: 0.5;">
+                            <i class="fas fa-circle"></i>
+                            <span>Analyzing quality...</span>
+                        </div>
+                        <div id="step4" style="display: flex; align-items: center; gap: 0.5rem; color: var(--gray); opacity: 0.5;">
+                            <i class="fas fa-circle"></i>
+                            <span>Saving results...</span>
+                        </div>
+                    </div>
+                `;
+                
+                // Add overlay
+                const overlay = document.createElement('div');
+                overlay.id = 'progressOverlay';
+                overlay.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(0, 0, 0, 0.5);
+                    z-index: 9998;
+                    backdrop-filter: blur(4px);
+                `;
+                
+                document.body.appendChild(overlay);
+                document.body.appendChild(progressContainer);
+            }
+        }
+        
+        function updateProgress(step, percentage, text) {
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            
+            if (progressBar) progressBar.style.width = percentage + '%';
+            if (progressText) progressText.textContent = text;
+            
+            // Update step indicators
+            const steps = ['step1', 'step2', 'step3', 'step4'];
+            steps.forEach((stepId, index) => {
+                const stepEl = document.getElementById(stepId);
+                if (stepEl) {
+                    const icon = stepEl.querySelector('i');
+                    if (index < step) {
+                        // Completed step
+                        stepEl.style.color = 'var(--success)';
+                        stepEl.style.opacity = '1';
+                        icon.className = 'fas fa-check-circle';
+                    } else if (index === step) {
+                        // Current step
+                        stepEl.style.color = 'var(--primary)';
+                        stepEl.style.opacity = '1';
+                        icon.className = 'fas fa-circle-notch fa-spin';
+                    } else {
+                        // Pending step
+                        stepEl.style.color = 'var(--gray)';
+                        stepEl.style.opacity = '0.5';
+                        icon.className = 'fas fa-circle';
+                    }
+                }
+            });
+        }
+        
+        function hideProgressBar() {
+            const progressContainer = document.getElementById('progressContainer');
+            const progressOverlay = document.getElementById('progressOverlay');
+            
+            if (progressContainer) {
+                progressContainer.style.transition = 'opacity 0.3s';
+                progressContainer.style.opacity = '0';
+                setTimeout(() => progressContainer.remove(), 300);
+            }
+            if (progressOverlay) {
+                progressOverlay.style.transition = 'opacity 0.3s';
+                progressOverlay.style.opacity = '0';
+                setTimeout(() => progressOverlay.remove(), 300);
+            }
+        }
+
         async function sendForm(fd) {
             processingStartTime = Date.now();
             updateStatus('Processing image...', 'info', true);
             hideResults();
             
+            // Show progress bar
+            showProgressBar();
+            updateProgress(0, 10, 'Uploading image...');
+            
             try {
+                // Simulate upload progress
+                setTimeout(() => updateProgress(1, 30, 'Detecting objects with YOLOv8...'), 300);
+                
                 const resp = await fetch('/upload', { method: 'POST', body: fd });
+                
+                // Update progress during fetch
+                updateProgress(2, 60, 'Analyzing quality with ANFIS...');
+                
                 const data = await resp.json();
                 
+                updateProgress(3, 90, 'Saving to database...');
+                
                 if (!resp.ok) {
+                    hideProgressBar();
                     throw new Error(data.error || `Server error: ${resp.status}`);
                 }
+                
+                updateProgress(4, 100, 'Complete!');
                 
                 // Calculate processing time
                 const processingTimeMs = Date.now() - processingStartTime;
@@ -740,7 +881,11 @@
                 }
                 
                 updateStatus(statusMessage, 'success');
+                
+                // Hide progress bar after short delay
+                setTimeout(() => hideProgressBar(), 500);
             } catch (err) {
+                hideProgressBar();
                 handleError(err, 'image processing');
             }
         }

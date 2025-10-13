@@ -1,0 +1,69 @@
+<header class="admin-header">
+    <div class="header-content">
+        <!-- Left Section -->
+        <div class="header-left">
+            <button class="menu-toggle" id="menuToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            
+            <div class="header-breadcrumb">
+                <span class="breadcrumb-item">
+                    <i class="fas fa-home"></i>
+                    <span>{% block breadcrumb_home %}Dashboard{% endblock %}</span>
+                </span>
+                {% block breadcrumb %}{% endblock %}
+            </div>
+        </div>
+        
+        <!-- Right Section -->
+        <div class="header-right">
+            <!-- Search Bar -->
+            <div class="header-search" id="headerSearchContainer">
+                <i class="fas fa-search"></i>
+                <input type="text" id="globalSearch" placeholder="Search everything..." autocomplete="off">
+                <div class="search-spinner" id="searchSpinner" style="display: none;">
+                    <i class="fas fa-spinner fa-spin"></i>
+                </div>
+                
+                <!-- Search Suggestions Dropdown -->
+                <div class="search-suggestions" id="searchSuggestions" style="display: none;">
+                    <div class="search-suggestions-header" id="searchSuggestionsHeader">
+                        <span class="search-query-text" id="searchQueryText"></span>
+                        <span class="search-results-count" id="searchResultsCount"></span>
+                    </div>
+                    <div class="search-suggestions-content" id="searchSuggestionsContent">
+                        <!-- Suggestions will be populated here -->
+                    </div>
+                    <!-- <div class="search-suggestions-footer">
+                        <button class="search-view-all" id="searchViewAll">
+                            <i class="fas fa-external-link-alt"></i>
+                            View all results
+                        </button>
+                    </div> -->
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="header-actions">
+                <!-- Mobile Search Button -->
+                <button class="header-action-btn mobile-search-btn" id="mobileSearchBtn" title="Search" style="display: none;">
+                    <i class="fas fa-search"></i>
+                </button>
+                
+                <a href="{{ url_for('notifications.user_notifications_page') }}" class="header-action-btn" title="Notifications">
+                    <i class="fas fa-bell"></i>
+                    <span class="badge" id="headerNotificationBadge" style="display: none;">0</span>
+                </a>
+                
+                <button class="header-action-btn" title="Messages">
+                    <i class="fas fa-envelope"></i>
+                </button>
+                
+                <a href="{{ url_for('logout') }}" class="header-action-btn" title="Logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header>
+

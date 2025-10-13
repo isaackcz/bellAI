@@ -1,0 +1,628 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications - PepperAI{% endblock %}
+
+{% block extra_styles %}
+<style>
+    /* Mobile-first responsive styles for user_notifications.html */
+    html { font-size: 14px; }
+    img, video, canvas, svg { max-width: 100%; height: auto; }
+
+    .un-page { max-width: 100%; margin: 0 auto; padding: 1rem; }
+
+    .un-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 2px solid #e0e0e0; gap: 1rem; }
+    .un-header-content h1 { color: #2c3e50; font-size: clamp(1.5rem, 5vw, 2.2rem); margin: 0 0 0.5rem 0; display: flex; align-items: center; gap: 0.75rem; }
+    .un-header-content h1 i { color: #3498db; }
+    .un-header-subtitle { color: #7f8c8d; font-size: 1rem; margin: 0; }
+    .un-header-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+    .un-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+    .un-stat-card { background: white; border-radius: 12px; padding: 1rem; display: flex; align-items: center; gap: 0.75rem; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .un-stat-icon { width: 50px; height: 50px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; color: white; }
+    .un-stat-icon.unread { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+    .un-stat-icon.total { background: linear-gradient(135deg, #3498db, #2980b9); }
+    .un-stat-number { font-size: 1.6rem; font-weight: 700; color: #2c3e50; margin-bottom: 0.25rem; }
+    .un-stat-label { color: #7f8c8d; font-size: 0.875rem; }
+
+    .un-filter { background: white; border-radius: 12px; padding: 1rem; margin-bottom: 1rem; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .un-filter-tabs { display: flex; gap: 2px; background: #f8f9fa; padding: 4px; border-radius: 8px; }
+    .un-filter-tab { flex: 1; padding: 12px 20px; border: none; background: transparent; color: #7f8c8d; border-radius: 6px; cursor: pointer; font-weight: 500; transition: all 0.2s ease; }
+    .un-filter-tab.active { background: #3498db; color: white; box-shadow: 0 2px 5px rgba(52, 152, 219, 0.3); }
+    .un-filter-tab:hover:not(.active) { background: rgba(52, 152, 219, 0.1); color: #3498db; }
+
+    .un-container { background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); min-height: 400px; position: relative; }
+    .un-loading, .un-error, .un-empty { display: flex; align-items: center; justify-content: center; padding: 60px 20px; text-align: center; }
+    .un-loading .un-spinner { display: flex; flex-direction: column; align-items: center; gap: 15px; color: #7f8c8d; }
+    .un-loading .un-spinner i { font-size: 2rem; }
+
+    .un-list { padding: 1rem; }
+    .un-item { display: flex; align-items: flex-start; gap: 0.75rem; padding: 1rem; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background-color 0.2s ease; position: relative; }
+    .un-item:hover { background: #f8f9fa; }
+    .un-item:last-child { border-bottom: none; }
+    .un-item.unread { background: linear-gradient(90deg, rgba(52, 152, 219, 0.05) 0%, transparent 100%); border-left: 4px solid #3498db; }
+
+    .un-icon { width: 45px; height: 45px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; color: white; flex-shrink: 0; }
+    .un-icon.priority-low { background: #27ae60; }
+    .un-icon.priority-normal { background: #3498db; }
+    .un-icon.priority-high { background: #f39c12; }
+    .un-icon.priority-urgent { background: #e74c3c; }
+
+    .un-content { flex: 1; min-width: 0; }
+    .un-title { font-weight: 600; color: #2c3e50; margin-bottom: 8px; font-size: 1.1rem; line-height: 1.3; }
+    .un-message { color: #555; font-size: 14px; line-height: 1.4; margin-bottom: 10px; }
+    .un-meta { display: flex; flex-wrap: wrap; gap: 10px; color: #7f8c8d; font-size: 12px; }
+    .un-meta span { display: flex; align-items: center; gap: 5px; }
+
+    .un-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .un-unread { width: 8px; height: 8px; background: #3498db; border-radius: 50%; animation: pulse 2s infinite; }
+
+    .un-attachments { margin-top: 10px; }
+    .un-attachment-item { display: inline-flex; align-items: center; gap: 5px; background: #f8f9fa; padding: 4px 8px; border-radius: 4px; font-size: 12px; color: #555; margin-right: 10px; margin-bottom: 5px; }
+
+    .un-load-more { padding: 20px; text-align: center; }
+
+    .un-detail-modal { max-width: 600px; width: 90%; }
+
+    /* Modal base styles (aligned with app) */
+    .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); animation: fadeIn 0.3s ease; }
+    .modal .modal-content { background: #ffffff; margin: 40px auto; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden; border-top: 4px solid #3498db; }
+    .modal .modal-header, .modal .modal-body, .modal .modal-footer { background: #ffffff; }
+    .modal .modal-header { padding: 16px 20px; border-bottom: 1px solid #e0e0e0; display: flex; align-items: center; justify-content: space-between; }
+    .modal .modal-header h2 { margin: 0; color: #2c3e50; font-size: 1.4rem; }
+    .modal .modal-body { padding: 20px; }
+    .modal .modal-footer { padding: 12px 20px; display: flex; justify-content: flex-end; gap: 10px; }
+
+    /* Priority/status badges */
+    .priority-badge { padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; text-transform: uppercase; display: inline-flex; align-items: center; gap: 6px; }
+    .priority-low { background: #d4edda; color: #155724; }
+    .priority-normal { background: #d1ecf1; color: #0c5460; }
+    .priority-high { background: #fff3cd; color: #856404; }
+    .priority-urgent { background: #f8d7da; color: #721c24; }
+
+    /* Detail modal content */
+    .detail-header { display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; }
+    .detail-title { font-size: 1.2rem; font-weight: 600; color: #2c3e50; }
+    .detail-meta { display: flex; flex-wrap: wrap; gap: 10px; color: #7f8c8d; font-size: 0.9rem; }
+    .detail-meta span { display: inline-flex; align-items: center; gap: 6px; }
+    .detail-content { background: #ffffff; border: 1px solid #eef2f4; border-radius: 10px; padding: 14px 16px; color: #555; line-height: 1.5; }
+    .detail-attachments { margin-top: 14px; }
+    .detail-attachments h4 { margin: 0 0 8px 0; font-size: 1rem; color: #2c3e50; }
+    .attachment-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+    .attachment-link { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border: 1px solid #e8eef2; border-radius: 8px; background: #f9fbfc; color: #2c3e50; text-decoration: none; }
+    .attachment-link:hover { background: #f1f6fa; }
+
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+    /* Tablet */
+    @media (max-width: 768px) {
+        .un-page { padding: 0.75rem; }
+        .un-header { flex-direction: column; gap: 1rem; align-items: stretch; }
+        .un-stats { grid-template-columns: 1fr; }
+        .un-item { padding: 0.75rem; }
+        .un-meta { flex-direction: column; gap: 0.5rem; }
+        .un-detail-modal { width: 95%; }
+    }
+
+    /* Small phones */
+    @media (max-width: 480px) {
+        html { font-size: 13px; }
+        .un-stats { grid-template-columns: 1fr; gap: 0.75rem; }
+        .un-filter-tabs { flex-direction: column; }
+        .un-filter-tab { width: 100%; }
+    }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+<span class="breadcrumb-separator">></span>
+<span class="breadcrumb-item">Notifications</span>
+{% endblock %}
+
+{% block content %}
+<div class="un-page">
+    <!-- Header Section -->
+    <div class="un-header">
+        <div class="un-header-content">
+            <h1><i class="fas fa-bell"></i> Notifications</h1>
+            <p class="un-header-subtitle">Stay updated with important messages and announcements</p>
+        </div>
+        <div class="un-header-actions">
+            <button class="btn btn-secondary" onclick="markAllAsRead()" id="markAllReadBtn">
+                <i class="fas fa-check-double"></i> Mark All as Read
+            </button>
+            <button class="btn btn-primary" onclick="refreshNotifications()">
+                <i class="fas fa-refresh"></i> Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- Notification Stats -->
+    <div class="un-stats">
+        <div class="un-stat-card">
+            <div class="un-stat-icon unread">
+                <i class="fas fa-bell"></i>
+            </div>
+            <div class="un-stat-content">
+                <div class="un-stat-number" id="unreadCount">0</div>
+                <div class="un-stat-label">Unread</div>
+            </div>
+        </div>
+        
+        <div class="un-stat-card">
+            <div class="un-stat-icon total">
+                <i class="fas fa-envelope-open"></i>
+            </div>
+            <div class="un-stat-content">
+                <div class="un-stat-number" id="totalCount">0</div>
+                <div class="un-stat-label">Total</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="un-filter">
+        <div class="un-filter-tabs">
+            <button class="un-filter-tab active" onclick="setFilter('all')" id="allTab">
+                All Notifications
+            </button>
+            <button class="un-filter-tab" onclick="setFilter('unread')" id="unreadTab">
+                Unread Only
+            </button>
+        </div>
+    </div>
+
+    <!-- Notifications Container -->
+    <div class="un-container">
+        <!-- Loading State -->
+        <div id="notificationsLoading" class="un-loading">
+            <div class="un-spinner">
+                <i class="fas fa-spinner fa-spin"></i>
+                <span>Loading notifications...</span>
+            </div>
+        </div>
+
+        <!-- Error State -->
+        <div id="notificationsError" class="un-error" style="display: none;">
+            <div class="un-error-content">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h3>Error Loading Notifications</h3>
+                <p>Unable to load your notifications. Please try again.</p>
+                <button class="btn btn-primary" onclick="loadNotifications()">
+                    <i class="fas fa-retry"></i> Retry
+                </button>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div id="notificationsEmpty" class="un-empty" style="display: none;">
+            <div class="un-empty-content">
+                <i class="fas fa-bell-slash"></i>
+                <h3>No Notifications</h3>
+                <p>You don't have any notifications yet. New messages will appear here.</p>
+            </div>
+        </div>
+
+        <!-- Notifications List -->
+        <div id="notificationsList" class="un-list">
+            <!-- Notifications will be loaded here -->
+        </div>
+
+        <!-- Load More Button -->
+        <div id="loadMoreContainer" class="un-load-more" style="display: none;">
+            <button class="btn btn-secondary btn-block" onclick="loadMoreNotifications()" id="loadMoreBtn">
+                <i class="fas fa-chevron-down"></i> Load More
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Notification Detail Modal -->
+<div id="notificationDetailModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="detailModalTitle">
+    <div class="modal-content un-detail-modal">
+        <div class="modal-header">
+            <h2 id="detailModalTitle">Notification</h2>
+            <button class="modal-close" onclick="closeDetailModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="modal-body" id="detailModalContent">
+            <!-- Notification details will be loaded here -->
+        </div>
+        
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeDetailModal()">Close</button>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentFilter = 'all';
+let currentPage = 1;
+let totalPages = 1;
+let isLoading = false;
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    loadNotifications();
+    
+    // Auto-refresh every 30 seconds
+    setInterval(function() {
+        if (!isLoading) {
+            loadNotifications(true);
+        }
+    }, 30000);
+});
+
+// Load notifications
+async function loadNotifications(silent = false) {
+    if (isLoading) return;
+    isLoading = true;
+    
+    if (!silent) {
+        showLoading();
+    }
+    
+    try {
+        const params = new URLSearchParams({
+            page: 1,
+            per_page: 20,
+            unread_only: currentFilter === 'unread' ? 'true' : 'false'
+        });
+        
+        const response = await fetch(`/api/user/notifications?${params}`);
+        const data = await response.json();
+        
+        if (response.ok) {
+            displayNotifications(data.notifications);
+            updateStats(data);
+            updatePagination(data.pagination);
+            currentPage = 1;
+            
+            if (!silent) {
+                hideLoading();
+                hideError();
+            }
+        } else {
+            throw new Error(data.error || 'Failed to load notifications');
+        }
+    } catch (error) {
+        if (!silent) {
+            showError();
+        }
+        console.error('Error loading notifications:', error);
+    } finally {
+        isLoading = false;
+    }
+}
+
+// Load more notifications (pagination)
+async function loadMoreNotifications() {
+    if (isLoading || currentPage >= totalPages) return;
+    
+    isLoading = true;
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    loadMoreBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+    loadMoreBtn.disabled = true;
+    
+    try {
+        const params = new URLSearchParams({
+            page: currentPage + 1,
+            per_page: 20,
+            unread_only: currentFilter === 'unread' ? 'true' : 'false'
+        });
+        
+        const response = await fetch(`/api/user/notifications?${params}`);
+        const data = await response.json();
+        
+        if (response.ok) {
+            appendNotifications(data.notifications);
+            currentPage++;
+            updatePagination(data.pagination);
+        }
+    } catch (error) {
+        console.error('Error loading more notifications:', error);
+    } finally {
+        isLoading = false;
+        loadMoreBtn.innerHTML = '<i class="fas fa-chevron-down"></i> Load More';
+        loadMoreBtn.disabled = false;
+    }
+}
+
+// Display notifications
+function displayNotifications(notifications) {
+    const container = document.getElementById('notificationsList');
+    
+    if (notifications.length === 0) {
+        showEmpty();
+        return;
+    }
+    
+    hideEmpty();
+    container.innerHTML = notifications.map(notification => createNotificationHTML(notification)).join('');
+}
+
+// Append notifications (for load more)
+function appendNotifications(notifications) {
+    const container = document.getElementById('notificationsList');
+    const newHTML = notifications.map(notification => createNotificationHTML(notification)).join('');
+    container.innerHTML += newHTML;
+}
+
+// Create notification HTML
+function createNotificationHTML(notification) {
+    const isUnread = !notification.is_read;
+    const priorityClass = `priority-${notification.priority}`;
+    
+    return `
+        <div class="un-item ${isUnread ? 'unread' : ''}" 
+             onclick="openNotificationDetail(${notification.id})">
+            <div class="un-icon ${priorityClass}">
+                <i class="fas fa-${getPriorityIcon(notification.priority)}"></i>
+            </div>
+            
+            <div class="un-content">
+                <div class="un-title">
+                    ${escapeHtml(notification.title)}
+                    ${isUnread ? '<span class="priority-badge ' + priorityClass + '">' + notification.priority.toUpperCase() + '</span>' : ''}
+                </div>
+                
+                <div class="un-message">
+                    ${escapeHtml(notification.message.substring(0, 200))}${notification.message.length > 200 ? '...' : ''}
+                </div>
+                
+                <div class="un-meta">
+                    <span><i class="fas fa-user"></i> ${escapeHtml(notification.sender)}</span>
+                    <span><i class="fas fa-clock"></i> ${formatTimeAgo(notification.created_at)}</span>
+                    <span><i class="fas fa-tag"></i> ${escapeHtml(notification.category)}</span>
+                    ${notification.attachments.length > 0 ? `<span><i class="fas fa-paperclip"></i> ${notification.attachments.length} attachment${notification.attachments.length > 1 ? 's' : ''}</span>` : ''}
+                </div>
+                
+                ${notification.attachments.length > 0 ? `
+                <div class="un-attachments">
+                    ${notification.attachments.slice(0, 2).map(att => `
+                        <span class="un-attachment-item">
+                            <i class="fas fa-${getFileIcon(att.file_type)}"></i>
+                            ${escapeHtml(att.original_filename)}
+                        </span>
+                    `).join('')}
+                    ${notification.attachments.length > 2 ? `<span class=\"un-attachment-item\">+${notification.attachments.length - 2} more</span>` : ''}
+                </div>
+                ` : ''}
+            </div>
+            
+            <div class="un-actions">
+                ${isUnread ? '<div class="un-unread"></div>' : ''}
+            </div>
+        </div>
+    `;
+}
+
+// Open notification detail modal
+async function openNotificationDetail(notificationId) {
+    try {
+        // Mark as read first
+        await markNotificationAsRead(notificationId);
+        
+        // Get full notification details
+        const response = await fetch(`/api/user/notifications`);
+        const data = await response.json();
+        
+        const notification = data.notifications.find(n => n.id === notificationId);
+        if (!notification) {
+            alert('Notification not found');
+            return;
+        }
+        
+        displayNotificationDetail(notification);
+        
+        // Refresh the list to update read status
+        loadNotifications(true);
+        updateUnreadCount();
+        
+    } catch (error) {
+        console.error('Error opening notification:', error);
+        alert('Error loading notification details');
+    }
+}
+
+// Display notification detail in modal
+function displayNotificationDetail(notification) {
+    document.getElementById('detailModalTitle').textContent = notification.title;
+    
+    const content = document.getElementById('detailModalContent');
+    content.innerHTML = `
+        <div class="detail-header">
+            <div class="detail-title">${escapeHtml(notification.title)}</div>
+            <div class="detail-meta">
+                <span><i class="fas fa-user"></i> From: ${escapeHtml(notification.sender)}</span>
+                <span><i class="fas fa-clock"></i> ${formatDate(notification.created_at)}</span>
+                <span><i class="fas fa-tag"></i> Category: ${escapeHtml(notification.category)}</span>
+                <span class="priority-badge priority-${notification.priority}">${notification.priority.toUpperCase()}</span>
+            </div>
+        </div>
+        
+        <div class="detail-content">
+            ${escapeHtml(notification.message).replace(/\n/g, '<br>')}
+        </div>
+        
+        ${notification.attachments.length > 0 ? `
+        <div class="detail-attachments">
+            <h4><i class="fas fa-paperclip"></i> Attachments</h4>
+            <div class="attachment-list">
+                ${notification.attachments.map(att => `
+                    <a href="${att.download_url}" class="attachment-link" target="_blank">
+                        <i class="fas fa-${getFileIcon(att.file_type)}"></i>
+                        <span>${escapeHtml(att.original_filename)}</span>
+                        <small class="text-muted">(${formatFileSize(att.file_size)})</small>
+                    </a>
+                `).join('')}
+            </div>
+        </div>
+        ` : ''}
+    `;
+    
+    const modal = document.getElementById('notificationDetailModal');
+    modal.style.display = 'block';
+    document.body.style.overflow = 'hidden';
+}
+
+// Close detail modal
+function closeDetailModal() {
+    const modal = document.getElementById('notificationDetailModal');
+    modal.style.display = 'none';
+    document.body.style.overflow = '';
+}
+
+// Mark notification as read
+async function markNotificationAsRead(notificationId) {
+    try {
+        await fetch(`/api/user/notifications/${notificationId}/read`, {
+            method: 'POST'
+        });
+    } catch (error) {
+        console.error('Error marking notification as read:', error);
+    }
+}
+
+// Mark all notifications as read
+async function markAllAsRead() {
+    if (!confirm('Mark all notifications as read?')) { return; }
+    try {
+        const response = await fetch('/api/user/notifications?unread_only=true&per_page=1000');
+        const data = await response.json();
+        
+        if (response.ok) {
+            const markPromises = data.notifications.map(n => 
+                fetch(`/api/user/notifications/${n.id}/read`, { method: 'POST' })
+            );
+            await Promise.all(markPromises);
+            loadNotifications();
+            updateUnreadCount();
+            alert('All notifications marked as read');
+        }
+    } catch (error) {
+        console.error('Error marking all as read:', error);
+        alert('Error marking notifications as read');
+    }
+}
+
+// Set filter
+function setFilter(filter) {
+    currentFilter = filter;
+    document.querySelectorAll('.un-filter-tab').forEach(tab => tab.classList.remove('active'));
+    if (filter === 'all') { document.getElementById('allTab').classList.add('active'); }
+    else { document.getElementById('unreadTab').classList.add('active'); }
+    loadNotifications();
+}
+
+// Update statistics
+function updateStats(data) {
+    document.getElementById('unreadCount').textContent = data.unread_count || 0;
+    document.getElementById('totalCount').textContent = data.notifications.length;
+    const markAllBtn = document.getElementById('markAllReadBtn');
+    markAllBtn.style.display = data.unread_count > 0 ? 'inline-flex' : 'none';
+}
+
+// Update pagination
+function updatePagination(pagination) {
+    totalPages = pagination.pages;
+    const loadMoreContainer = document.getElementById('loadMoreContainer');
+    loadMoreContainer.style.display = pagination.has_next ? 'block' : 'none';
+}
+
+// Update unread count in sidebar
+async function updateUnreadCount() {
+    try {
+        const response = await fetch('/api/user/notifications/unread-count');
+        const data = await response.json();
+        
+        const badge = document.getElementById('notificationBadge');
+        const sidebarBadge = document.getElementById('notificationBadge');
+        
+        if (data.unread_count > 0) {
+            if (badge) { badge.textContent = data.unread_count; badge.style.display = 'inline-block'; }
+            if (sidebarBadge) { sidebarBadge.textContent = data.unread_count; sidebarBadge.style.display = 'inline-block'; }
+        } else {
+            if (badge) badge.style.display = 'none';
+            if (sidebarBadge) sidebarBadge.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Error updating unread count:', error);
+    }
+}
+
+// Refresh notifications
+function refreshNotifications() { loadNotifications(); updateUnreadCount(); }
+
+// UI state functions
+function showLoading() { document.getElementById('notificationsLoading').style.display = 'flex'; document.getElementById('notificationsList').style.display = 'none'; }
+function hideLoading() { document.getElementById('notificationsLoading').style.display = 'none'; document.getElementById('notificationsList').style.display = 'block'; }
+function showError() { document.getElementById('notificationsError').style.display = 'flex'; document.getElementById('notificationsList').style.display = 'none'; }
+function hideError() { document.getElementById('notificationsError').style.display = 'none'; }
+function showEmpty() { document.getElementById('notificationsEmpty').style.display = 'flex'; document.getElementById('notificationsList').style.display = 'none'; }
+function hideEmpty() { document.getElementById('notificationsEmpty').style.display = 'none'; document.getElementById('notificationsList').style.display = 'block'; }
+
+// Utility functions
+function getPriorityIcon(priority) {
+    switch (priority) {
+        case 'urgent': return 'exclamation-triangle';
+        case 'high': return 'exclamation';
+        case 'normal': return 'bell';
+        case 'low': return 'info-circle';
+        default: return 'bell';
+    }
+}
+
+function getFileIcon(fileType) {
+    switch (fileType) {
+        case 'image': return 'image';
+        case 'document': return 'file-alt';
+        default: return 'file';
+    }
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024; const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function formatTimeAgo(dateString) {
+    const date = new Date(dateString); const now = new Date(); const diff = now - date;
+    const minutes = Math.floor(diff / 60000); const hours = Math.floor(diff / 3600000); const days = Math.floor(diff / 86400000);
+    if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
+    if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+    return 'Just now';
+}
+
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+}
+
+function escapeHtml(text) {
+    const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+    return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('notificationDetailModal');
+    if (event.target === modal) { closeDetailModal(); }
+}
+
+// Close on Esc
+window.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const modal = document.getElementById('notificationDetailModal');
+        if (modal && modal.style.display === 'block') { closeDetailModal(); }
+    }
+});
+
+// Initialize unread count on page load
+updateUnreadCount();
+</script>
+{% endblock %}

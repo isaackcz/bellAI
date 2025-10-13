@@ -1,0 +1,691 @@
+{% extends "base.html" %}
+
+{% block title %}Bell Pepper History - PepperAI{% endblock %}
+{% block description %}View all your bell pepper detections and analysis history{% endblock %}
+
+{% block extra_styles %}
+<style>
+    /* Mobile-first, fluid, and responsive styles specifically for history.html */
+    html { font-size: 14px; }
+
+    /* Typography scale */
+    h1 { font-size: clamp(1.5rem, 5vw, 2rem); line-height: 1.2; }
+    h2 { font-size: clamp(1.125rem, 3.5vw, 1.5rem); line-height: 1.3; }
+    h3 { font-size: clamp(1rem, 3vw, 1.25rem); line-height: 1.35; }
+    p, small { line-height: 1.5; }
+
+    /* Images and media */
+    img, video, canvas, svg { max-width: 100%; height: auto; }
+    .history-pepper-image { width: 64px !important; height: 64px !important; }
+
+    /* Cards and spacing */
+    .stat-card { border-radius: 0.75rem; }
+    .detection-item { border-radius: var(--border-radius); }
+
+    /* Lists and grids */
+    .history-detections { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+
+    /* Header layout inside each pepper card */
+    .history-pepper-header { display: grid; grid-template-columns: auto 1fr !important; align-items: center; gap: 0.75rem; }
+
+    /* Quality metrics grid */
+    .history-quality-metrics { display: grid; grid-template-columns: repeat(2, 1fr) !important; gap: 0.25rem 0.5rem; }
+
+    /* Pagination bar */
+    .pagination-container { display: flex; flex-direction: column; gap: 0.75rem; align-items: stretch; }
+    .pagination-container .page-info { text-align: center; }
+
+    /* Stats grid */
+    .history-stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+    @media (min-width: 768px) and (max-width: 1024px) { .history-stats-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 768px) { .history-stats-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; } }
+    @media (max-width: 480px) { .history-stats-grid { grid-template-columns: 1fr; gap: 1rem; } }
+
+    /* Filters layout */
+    .history-filters { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+    @media (max-width: 480px) {
+        .history-filters { flex-direction: column; align-items: stretch; gap: 0.75rem; }
+        #varietyFilter, #qualityFilter, #perPageSelect { width: 100%; }
+    }
+
+    /* Controls row (filters) */
+    #varietyFilter, #qualityFilter, #perPageSelect { font-size: 0.9rem; max-width: 100%; }
+
+    /* Fine-tune small elements */
+    .pepper-id-badge { font-size: 0.7rem; }
+    .pepper-confidence { font-size: 0.85rem; }
+
+    /* Tablet breakpoint */
+    @media (min-width: 768px) {
+        html { font-size: 15px; }
+        .history-detections { grid-template-columns: 1fr; gap: 1.25rem; }
+        .history-pepper-image { width: 80px !important; height: 80px !important; }
+        .history-pepper-header { grid-template-columns: auto 1fr auto !important; gap: 1rem; }
+        .history-quality-metrics { grid-template-columns: repeat(3, 1fr) !important; }
+        .pagination-container { flex-direction: row; align-items: center; }
+        .pagination-container .page-info { text-align: center; }
+    }
+
+    /* Desktop breakpoint */
+    @media (min-width: 1024px) {
+        html { font-size: 16px; }
+        .history-detections { grid-template-columns: 1fr; gap: 1.5rem; }
+        .history-quality-metrics { grid-template-columns: repeat(4, 1fr) !important; }
+    }
+
+    /* Small-phone tweaks */
+    @media (max-width: 480px) {
+        .history-pepper-header { grid-template-columns: 1fr !important; text-align: left; }
+        .history-pepper-image { width: 56px !important; height: 56px !important; }
+        .history-quality-metrics { grid-template-columns: 1fr !important; }
+        .pagination-container { gap: 0.5rem; }
+        .pagination-container .page-info { text-align: center; }
+    }
+</style>
+{% endblock %}
+
+{% block breadcrumb_home %}Dashboard{% endblock %}
+{% block breadcrumb %}
+    <span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+    <span class="breadcrumb-item">History</span>
+{% endblock %}
+
+{% block content %}
+<div style="max-width: 100%; margin: 0 auto;">
+    <!-- Page Header -->
+    <div style="margin-bottom: 2rem;">
+        <h1 style="font-size: 2rem; font-weight: 700; color: var(--dark); margin-bottom: 0.5rem;">
+            <i class="fas fa-history"></i> Bell Pepper History
+        </h1>
+        <p style="color: var(--secondary); font-size: 1rem;">
+            All your analyzed bell peppers in one place
+        </p>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="history-stats-grid" style="margin-bottom: 3rem;">
+        <div class="stat-card" style="background: var(--card-bg); backdrop-filter: blur(20px); border-radius: var(--border-radius); box-shadow: var(--box-shadow); padding: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.2); position: relative; overflow: hidden;">
+            <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--primary), var(--primary-hover));"></div>
+            <div class="stat-icon" style="width: 50px; height: 50px; background: var(--primary-light); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--primary); font-size: 1.5rem; margin-bottom: 1rem;">
+                <i class="fas fa-pepper-hot"></i>
+            </div>
+            <div class="stat-value" style="font-size: 2rem; font-weight: 700; color: var(--dark); margin-bottom: 0.25rem;">{{ total_peppers }}</div>
+            <div class="stat-label" style="color: var(--secondary); font-size: 0.9rem;">Total Peppers</div>
+        </div>
+        
+        <div class="stat-card" style="background: var(--card-bg); backdrop-filter: blur(20px); border-radius: var(--border-radius); box-shadow: var(--box-shadow); padding: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.2); position: relative; overflow: hidden;">
+            <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #10b981, #059669);"></div>
+            <div class="stat-icon" style="width: 50px; height: 50px; background: var(--success-light); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--success); font-size: 1.5rem; margin-bottom: 1rem;">
+                <i class="fas fa-star"></i>
+            </div>
+            <div class="stat-value" style="font-size: 2rem; font-weight: 700; color: var(--dark); margin-bottom: 0.25rem;">{{ avg_quality }}%</div>
+            <div class="stat-label" style="color: var(--secondary); font-size: 0.9rem;">Avg Quality</div>
+        </div>
+        
+        <div class="stat-card" style="background: var(--card-bg); backdrop-filter: blur(20px); border-radius: var(--border-radius); box-shadow: var(--box-shadow); padding: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.2); position: relative; overflow: hidden;">
+            <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #10b981, #3b82f6, #f59e0b, #ef4444);"></div>
+            <div class="stat-icon" style="width: 50px; height: 50px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(59, 130, 246, 0.1)); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--success); font-size: 1.5rem; margin-bottom: 1rem;">
+                <i class="fas fa-chart-pie"></i>
+            </div>
+            <div class="stat-label" style="color: var(--secondary); font-size: 0.85rem; margin-bottom: 0.75rem; font-weight: 600;">Quality Distribution</div>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem;">
+                <div style="display: flex; flex-direction: column; align-items: center; padding: 0.5rem; background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(16, 185, 129, 0.15)); border-radius: 8px;">
+                    <div style="font-size: 1.4rem; font-weight: 700; color: #10b981;">{{ excellent_count }}</div>
+                    <div style="font-size: 0.65rem; color: #10b981; font-weight: 600;">Excellent</div>
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: center; padding: 0.5rem; background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(59, 130, 246, 0.15)); border-radius: 8px;">
+                    <div style="font-size: 1.4rem; font-weight: 700; color: #3b82f6;">{{ good_count }}</div>
+                    <div style="font-size: 0.65rem; color: #3b82f6; font-weight: 600;">Good</div>
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: center; padding: 0.5rem; background: linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(245, 158, 11, 0.15)); border-radius: 8px;">
+                    <div style="font-size: 1.4rem; font-weight: 700; color: #f59e0b;">{{ fair_count }}</div>
+                    <div style="font-size: 0.65rem; color: #f59e0b; font-weight: 600;">Fair</div>
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: center; padding: 0.5rem; background: linear-gradient(135deg, rgba(239, 68, 68, 0.08), rgba(239, 68, 68, 0.15)); border-radius: 8px;">
+                    <div style="font-size: 1.4rem; font-weight: 700; color: #ef4444;">{{ poor_count }}</div>
+                    <div style="font-size: 0.65rem; color: #ef4444; font-weight: 600;">Poor</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bell Peppers List -->
+    <div style="background: var(--card-bg); backdrop-filter: blur(20px); border-radius: var(--border-radius); box-shadow: var(--box-shadow); padding: 2rem; border: 1px solid rgba(255, 255, 255, 0.2);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+            <h2 style="font-size: 1.5rem; font-weight: 600; color: var(--dark); display: flex; align-items: center; gap: 0.5rem; margin: 0;">
+                <i class="fas fa-pepper-hot" style="color: var(--primary);"></i>
+                All Detected Peppers
+            </h2>
+            
+            <div class="history-filters">
+                <!-- Variety Filter -->
+                <div style="position: relative;">
+                    <select id="varietyFilter" onchange="filterByVariety(this.value)" 
+                            style="padding: 0.5rem 2.5rem 0.5rem 1rem; border: 2px solid var(--gray); border-radius: var(--border-radius-sm); font-family: 'Inter', sans-serif; font-size: 0.9rem; cursor: pointer; background: white; appearance: none; min-width: 180px;">
+                        <option value="">All Varieties</option>
+                        {% for variety, count in variety_stats %}
+                        <option value="{{ variety }}" {% if request.args.get('variety') == variety %}selected{% endif %}>
+                            {{ variety }} ({{ count }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <i class="fas fa-chevron-down" style="position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); color: var(--secondary); pointer-events: none;"></i>
+                </div>
+                
+                <!-- Quality Filter -->
+                <div style="position: relative;">
+                    <select id="qualityFilter" onchange="filterByQuality(this.value)"
+                            style="padding: 0.5rem 2.5rem 0.5rem 1rem; border: 2px solid var(--gray); border-radius: var(--border-radius-sm); font-family: 'Inter', sans-serif; font-size: 0.9rem; cursor: pointer; background: white; appearance: none; min-width: 150px;">
+                        <option value="">All Quality</option>
+                        <option value="excellent" {% if request.args.get('quality') == 'excellent' %}selected{% endif %}>Excellent ({{ excellent_count }})</option>
+                        <option value="good" {% if request.args.get('quality') == 'good' %}selected{% endif %}>Good ({{ good_count }})</option>
+                        <option value="fair" {% if request.args.get('quality') == 'fair' %}selected{% endif %}>Fair ({{ fair_count }})</option>
+                        <option value="poor" {% if request.args.get('quality') == 'poor' %}selected{% endif %}>Poor ({{ poor_count }})</option>
+                    </select>
+                    <i class="fas fa-chevron-down" style="position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); color: var(--secondary); pointer-events: none;"></i>
+                </div>
+                
+                <span style="color: var(--secondary); font-size: 0.875rem;">{{ peppers|length }} shown</span>
+            </div>
+        </div>
+
+        {% if peppers %}
+            <!-- Peppers Grid (same style as analysis page) -->
+            <div id="pepperSection" style="display: block;">
+                <div id="bellPeppers" class="history-detections">
+                    {% for pepper in peppers %}
+                    <div id="pepper-{{ pepper.id }}" class="detection-item history-pepper" style="animation-delay: {{ loop.index0 * 0.05 }}s; background: linear-gradient(145deg, #ffffff 0%, #f8fffe 100%); border: 1px solid rgba(0, 0, 0, 0.08); border-radius: var(--border-radius); padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08); transition: all 0.3s ease;">
+                        <div class="history-pepper-header" style="display: grid; align-items: center; gap: 1rem; padding: 0.75rem 0;">
+                            {% if pepper.crop_path %}
+                            <img src="/results/{{ pepper.crop_path }}?t={{ pepper.created_at.timestamp() }}" 
+                                 alt="Bell Pepper {{ pepper.pepper_id }}" 
+                                 class="history-pepper-image"
+                                 style="border-radius: 12px; object-fit: cover; border: 3px solid #ffffff; box-shadow: 0 8px 25px rgba(79, 70, 229, 0.2);">
+                            {% endif %}
+                            
+                            <div class="pepper-info" style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.5rem;">
+                                <div class="pepper-title" style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0;">
+                                    <h3 class="pepper-name" style="font-size: 1.1rem; font-weight: 600; color: #1e293b; margin: 0;">
+                                        <i class="fas fa-pepper-hot" style="color: var(--primary);"></i>
+                                        {{ pepper.variety }}
+                                    </h3>
+                                    <span class="pepper-id-badge" style="background: linear-gradient(135deg, var(--primary), var(--primary-hover)); color: var(--dark); padding: 0.4rem 0.8rem; border-radius: 12px; font-size: 0.7rem; font-weight: 700;">
+                                        {{ pepper.pepper_id }}
+                                    </span>
+                                </div>
+                                <p class="pepper-confidence" style="color: #64748b; font-size: 0.8rem; font-weight: 500; margin: 0;">
+                                    <i class="fas fa-eye" style="color: var(--primary);"></i>
+                                    {{ (pepper.confidence * 100)|round|int }}% detection confidence
+                                </p>
+                                <div class="confidence-bar" style="width: 100%; height: 4px; background: rgba(79, 70, 229, 0.1); border-radius: 2px; overflow: hidden;">
+                                    <div class="confidence-fill" style="height: 100%; background: linear-gradient(90deg, var(--primary), var(--primary-hover), var(--primary-dark)); width: {{ (pepper.confidence * 100)|round|int }}%;"></div>
+                                </div>
+                                <small style="color: var(--secondary); font-size: 0.75rem;">
+                                    <i class="fas fa-clock"></i> {{ pepper.created_at.strftime('%B %d, %Y at %I:%M %p') }}
+                                </small>
+                            </div>
+                            
+                            {% if pepper.quality_category %}
+                            <div class="quality-score" style="align-self: flex-start; padding: 0.6rem 1.2rem; border-radius: 25px; font-weight: 700; font-size: 0.85rem; 
+                                {% if pepper.quality_score >= 80 %}background: linear-gradient(135deg, #dcfce7, #bbf7d0); color: #16a34a; border: 3px solid rgba(22, 163, 74, 0.3);
+                                {% elif pepper.quality_score >= 60 %}background: linear-gradient(135deg, #dbeafe, #bfdbfe); color: #2563eb; border: 3px solid rgba(37, 99, 235, 0.3);
+                                {% elif pepper.quality_score >= 40 %}background: linear-gradient(135deg, #fef3c7, #fde68a); color: #d97706; border: 3px solid rgba(217, 119, 6, 0.3);
+                                {% else %}background: linear-gradient(135deg, #fecaca, #fca5a5); color: #dc2626; border: 3px solid rgba(220, 38, 38, 0.3);
+                                {% endif %}">
+                                {{ pepper.quality_category }} ({{ pepper.quality_score|round|int }}/100)
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Quality Metrics -->
+                        {% if pepper.quality_score %}
+                        <div class="history-quality-metrics" style="display: grid; gap: 0; margin: 0.5rem 0 0; padding: 0.5rem 0;">
+                            <div class="history-metric-card" style="text-align: center; padding: 0.25rem 0;">
+                                <div class="metric-value" style="font-size: 1rem; font-weight: 600; color: #1e293b;">
+                                    {% if pepper.color_uniformity >= 90 %}Excellent
+                                    {% elif pepper.color_uniformity >= 75 %}Good
+                                    {% elif pepper.color_uniformity >= 60 %}Fair
+                                    {% elif pepper.color_uniformity >= 40 %}Poor
+                                    {% else %}Very Poor{% endif %}
+                                </div>
+                                <div class="metric-label" style="font-size: 0.7rem; color: #475569; font-weight: 600;">Color Uniformity</div>
+                            </div>
+                            <div class="history-metric-card" style="text-align: center; padding: 0.25rem 0;">
+                                <div class="metric-value" style="font-size: 1rem; font-weight: 600; color: #1e293b;">
+                                    {% if pepper.size_consistency >= 90 %}Excellent
+                                    {% elif pepper.size_consistency >= 75 %}Good
+                                    {% elif pepper.size_consistency >= 60 %}Fair
+                                    {% elif pepper.size_consistency >= 40 %}Poor
+                                    {% else %}Very Poor{% endif %}
+                                </div>
+                                <div class="metric-label" style="font-size: 0.7rem; color: #475569; font-weight: 600;">Size Consistency</div>
+                            </div>
+                            <div class="history-metric-card" style="text-align: center; padding: 0.25rem 0;">
+                                <div class="metric-value" style="font-size: 1rem; font-weight: 600; color: #1e293b;">
+                                    {% if pepper.surface_quality >= 90 %}Excellent
+                                    {% elif pepper.surface_quality >= 75 %}Good
+                                    {% elif pepper.surface_quality >= 60 %}Fair
+                                    {% elif pepper.surface_quality >= 40 %}Poor
+                                    {% else %}Very Poor{% endif %}
+                                </div>
+                                <div class="metric-label" style="font-size: 0.7rem; color: #475569; font-weight: 600;">Surface Quality</div>
+                            </div>
+                            <div class="history-metric-card" style="text-align: center; padding: 0.25rem 0;">
+                                <div class="metric-value" style="font-size: 1rem; font-weight: 600; color: #1e293b;">
+                                    {% if pepper.ripeness_level >= 90 %}Excellent
+                                    {% elif pepper.ripeness_level >= 75 %}Good
+                                    {% elif pepper.ripeness_level >= 60 %}Fair
+                                    {% elif pepper.ripeness_level >= 40 %}Poor
+                                    {% else %}Very Poor{% endif %}
+                                </div>
+                                <div class="metric-label" style="font-size: 0.7rem; color: #475569; font-weight: 600;">Ripeness Level</div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- View Details Link -->
+                        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(0, 0, 0, 0.06);">
+                            <a href="{{ url_for('history.pepper_detail', pepper_id=pepper.id) }}" 
+                               style="display: inline-flex; align-items: center; gap: 0.5rem; color: var(--primary); text-decoration: none; font-weight: 600; font-size: 0.9rem; transition: var(--transition);">
+                                <i class="fas fa-arrow-right"></i>
+                                View Full Analysis
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Professional Pagination Bar -->
+            <div class="pagination-container" style="display: flex; justify-content: space-between; align-items: center; margin-top: 2rem; padding: 1rem 0; border-top: 1px solid rgba(0, 0, 0, 0.06); background: #f8f9fa; border-radius: 8px; padding: 1rem 1.5rem;">
+                <!-- Left: Rows per page selector -->
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="color: #6c757d; font-size: 14px; font-weight: 500;">Rows per page:</span>
+                    <select id="perPageSelect" onchange="changePerPage(this.value)" 
+                            style="padding: 0.25rem 0.5rem; border: 1px solid #ced4da; border-radius: 4px; font-size: 14px; background: white; cursor: pointer; appearance: none; min-width: 60px;">
+                        <option value="5" {% if per_page == 5 %}selected{% endif %}>5</option>
+                        <option value="10" {% if per_page == 10 %}selected{% endif %}>10</option>
+                        <option value="20" {% if per_page == 20 %}selected{% endif %}>20</option>
+                        <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
+                    </select>
+                </div>
+                
+                <!-- Center: Page info -->
+                <div class="page-info" style="color: #6c757d; font-size: 14px; font-weight: 500;">
+                    {% if total_peppers > 0 %}
+                        {{ ((pagination.page - 1) * per_page) + 1 }}-{{ [pagination.page * per_page, total_peppers]|min }} of {{ total_peppers }}
+                    {% else %}
+                        0 of 0
+                    {% endif %}
+                </div>
+                
+                <!-- Right: Navigation buttons -->
+                <div style="display: flex; align-items: center; gap: 0.25rem;">
+                    <button class="prev-btn" onclick="navigatePage('prev')" 
+                            style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: 1px solid #ced4da; background: {% if pagination.has_prev %}white{% else %}#f8f9fa{% endif %}; border-radius: 4px; color: {% if pagination.has_prev %}#6c757d{% else %}#adb5bd{% endif %}; font-size: 16px; transition: all 0.2s; cursor: {% if pagination.has_prev %}pointer{% else %}not-allowed{% endif %};" 
+                            onmouseover="if(this.style.pointerEvents !== 'none') this.style.background='#f8f9fa'" 
+                            onmouseout="if(this.style.pointerEvents !== 'none') this.style.background='white'">
+                        &lt;
+                    </button>
+                    
+                    <button class="next-btn" onclick="navigatePage('next')" 
+                            style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: 1px solid #ced4da; background: {% if pagination.has_next %}white{% else %}#f8f9fa{% endif %}; border-radius: 4px; color: {% if pagination.has_next %}#6c757d{% else %}#adb5bd{% endif %}; font-size: 16px; transition: all 0.2s; cursor: {% if pagination.has_next %}pointer{% else %}not-allowed{% endif %};" 
+                            onmouseover="if(this.style.pointerEvents !== 'none') this.style.background='#f8f9fa'" 
+                            onmouseout="if(this.style.pointerEvents !== 'none') this.style.background='white'">
+                        &gt;
+                    </button>
+                </div>
+            </div>
+        {% else %}
+            <div style="text-align: center; padding: 3rem 1rem; color: var(--secondary);">
+                <i class="fas fa-seedling" style="font-size: 4rem; color: var(--gray); opacity: 0.5; margin-bottom: 1rem;"></i>
+                <h3 style="color: var(--dark); margin-bottom: 0.5rem;">No Peppers Yet</h3>
+                <p>Start analyzing bell peppers to build your history</p>
+                <a href="{{ url_for('analyze') }}" class="btn btn-primary" style="margin-top: 1rem; display: inline-flex;">
+                    <i class="fas fa-camera"></i> Analyze Now
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+    
+<script>
+    // Real-time filtering with AJAX (MUI-style instant updates)
+    let currentFilters = {
+        variety: '',
+        quality: '',
+        page: 1,
+        per_page: 10
+    };
+    
+    // Initialize filters when page loads
+    function initializeFilters() {
+        const varietyFilter = document.getElementById('varietyFilter');
+        const qualityFilter = document.getElementById('qualityFilter');
+        const perPageSelect = document.getElementById('perPageSelect');
+        
+        if (varietyFilter) currentFilters.variety = varietyFilter.value;
+        if (qualityFilter) currentFilters.quality = qualityFilter.value;
+        if (perPageSelect) currentFilters.per_page = perPageSelect.value;
+    }
+    
+    function filterByVariety(variety) {
+        console.log('Filtering by variety:', variety);
+        currentFilters.variety = variety;
+        currentFilters.page = 1; // Reset to first page
+        loadResults();
+    }
+    
+    function filterByQuality(quality) {
+        console.log('Filtering by quality:', quality);
+        currentFilters.quality = quality;
+        currentFilters.page = 1; // Reset to first page
+        loadResults();
+    }
+    
+    function changePerPage(perPage) {
+        currentFilters.per_page = perPage;
+        currentFilters.page = 1; // Reset to first page
+        loadResults();
+    }
+    
+    function navigatePage(direction) {
+        if (direction === 'prev' && currentFilters.page > 1) {
+            currentFilters.page--;
+        } else if (direction === 'next') {
+            currentFilters.page++;
+        }
+        loadResults();
+    }
+    
+    function loadResults() {
+        console.log('Loading results with filters:', currentFilters);
+        
+        // Show AJAX status indicator
+        const statusIndicator = document.getElementById('ajaxStatus');
+        if (statusIndicator) {
+            statusIndicator.style.display = 'inline-flex';
+            statusIndicator.style.alignItems = 'center';
+            statusIndicator.style.gap = '0.5rem';
+        }
+        
+        // Show loading state
+        showLoadingState();
+        
+        // Build query parameters
+        const params = new URLSearchParams();
+        if (currentFilters.variety) params.set('variety', currentFilters.variety);
+        if (currentFilters.quality) params.set('quality', currentFilters.quality);
+        params.set('page', currentFilters.page);
+        params.set('per_page', currentFilters.per_page);
+        
+        const url = `/history/ajax?${params.toString()}`;
+        console.log('Making AJAX request to:', url);
+        
+        // Make AJAX request
+        fetch(url)
+            .then(response => {
+                console.log('Response status:', response.status);
+                if (response.status === 401) {
+                    // Authentication error - redirect to login
+                    window.location.href = '/login';
+                    return;
+                }
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data && data.error) {
+                    console.error('Server error:', data.error);
+                    hideLoadingState();
+                    alert('Error: ' + data.error);
+                    return;
+                }
+                console.log('Received data:', data);
+                updateResults(data);
+                updatePagination(data.pagination);
+                hideLoadingState();
+                
+                // Hide AJAX status indicator
+                const statusIndicator = document.getElementById('ajaxStatus');
+                if (statusIndicator) {
+                    statusIndicator.style.display = 'none';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading results:', error);
+                hideLoadingState();
+                
+                // Hide AJAX status indicator
+                const statusIndicator = document.getElementById('ajaxStatus');
+                if (statusIndicator) {
+                    statusIndicator.style.display = 'none';
+                }
+                
+                alert('Error loading results: ' + error.message);
+            });
+    }
+    
+    function updateResults(data) {
+        const resultsContainer = document.querySelector('#bellPeppers');
+        if (!resultsContainer) {
+            console.error('Could not find results container #bellPeppers');
+            return;
+        }
+        console.log('Found results container:', resultsContainer);
+        
+        if (data.peppers.length === 0) {
+            resultsContainer.innerHTML = `
+                <div style="text-align: center; padding: 3rem 1rem; color: var(--secondary);">
+                    <i class="fas fa-seedling" style="font-size: 4rem; color: var(--gray); opacity: 0.5; margin-bottom: 1rem;"></i>
+                    <h3 style="color: var(--dark); margin-bottom: 0.5rem;">No Peppers Found</h3>
+                    <p>Try adjusting your filters or analyze some new peppers</p>
+                </div>
+            `;
+            return;
+        }
+        
+        // Generate HTML for peppers (matching the exact template structure)
+        let peppersHtml = '';
+        data.peppers.forEach((pepper, index) => {
+            const qualityScore = pepper.quality_score ? Math.round(pepper.quality_score) : 0;
+            const confidence = pepper.confidence ? Math.round(pepper.confidence * 100) : 0;
+            
+            // Determine quality colors
+            let qualityBg, qualityColor, qualityBorder;
+            if (qualityScore >= 80) {
+                qualityBg = 'linear-gradient(135deg, #dcfce7, #bbf7d0)';
+                qualityColor = '#16a34a';
+                qualityBorder = 'rgba(22, 163, 74, 0.3)';
+            } else if (qualityScore >= 60) {
+                qualityBg = 'linear-gradient(135deg, #dbeafe, #bfdbfe)';
+                qualityColor = '#2563eb';
+                qualityBorder = 'rgba(37, 99, 235, 0.3)';
+            } else if (qualityScore >= 40) {
+                qualityBg = 'linear-gradient(135deg, #fef3c7, #fde68a)';
+                qualityColor = '#d97706';
+                qualityBorder = 'rgba(217, 119, 6, 0.3)';
+            } else {
+                qualityBg = 'linear-gradient(135deg, #fecaca, #fca5a5)';
+                qualityColor = '#dc2626';
+                qualityBorder = 'rgba(220, 38, 38, 0.3)';
+            }
+            
+            peppersHtml += `
+                <div id="pepper-${pepper.id}" class="detection-item history-pepper" style="animation-delay: ${index * 0.05}s; background: linear-gradient(145deg, #ffffff 0%, #f8fffe 100%); border: 1px solid rgba(0, 0, 0, 0.08); border-radius: var(--border-radius); padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08); transition: all 0.3s ease;">
+                    <div class="history-pepper-header" style="display: grid; align-items: center; gap: 1rem; padding: 0.75rem 0;">
+                        ${pepper.crop_path ? `
+                        <img src="/results/${pepper.crop_path}" 
+                             alt="Bell Pepper ${pepper.pepper_id || ''}" 
+                             class="history-pepper-image"
+                             style="border-radius: 12px; object-fit: cover; border: 3px solid #ffffff; box-shadow: 0 8px 25px rgba(79, 70, 229, 0.2);">
+                        ` : ''}
+                        
+                        <div class="pepper-info" style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.5rem;">
+                            <div class="pepper-title" style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0;">
+                                <h3 class="pepper-name" style="font-size: 1.1rem; font-weight: 600; color: #1e293b; margin: 0;">
+                                    <i class="fas fa-pepper-hot" style="color: var(--primary);"></i>
+                                    ${pepper.variety || 'Bell Pepper'}
+                                </h3>
+                                <span class="pepper-id-badge" style="background: linear-gradient(135deg, var(--primary), var(--primary-hover)); color: var(--dark); padding: 0.4rem 0.8rem; border-radius: 12px; font-size: 0.7rem; font-weight: 700;">
+                                    ${pepper.pepper_id || 'Unknown'}
+                                </span>
+                            </div>
+                            <p class="pepper-confidence" style="color: #64748b; font-size: 0.8rem; font-weight: 500; margin: 0;">
+                                <i class="fas fa-eye" style="color: var(--primary);"></i>
+                                ${confidence}% detection confidence
+                            </p>
+                            <div class="confidence-bar" style="width: 100%; height: 4px; background: rgba(79, 70, 229, 0.1); border-radius: 2px; overflow: hidden;">
+                                <div class="confidence-fill" style="height: 100%; background: linear-gradient(90deg, var(--primary), var(--primary-hover), var(--primary-dark)); width: ${confidence}%;"></div>
+                            </div>
+                            <small style="color: var(--secondary); font-size: 0.75rem;">
+                                <i class="fas fa-clock"></i> ${pepper.created_at || 'Unknown date'}
+                            </small>
+                        </div>
+                        
+                        ${pepper.quality_category ? `
+                        <div class="quality-score" style="align-self: flex-start; padding: 0.6rem 1.2rem; border-radius: 25px; font-weight: 700; font-size: 0.85rem; background: ${qualityBg}; color: ${qualityColor}; border: 3px solid ${qualityBorder};">
+                            ${pepper.quality_category} (${qualityScore}/100)
+                        </div>
+                        ` : ''}
+                    </div>
+                    
+                    <!-- View Details Link -->
+                    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(0, 0, 0, 0.06);">
+                        <a href="/pepper/${pepper.id}" 
+                           style="display: inline-flex; align-items: center; gap: 0.5rem; color: var(--primary); text-decoration: none; font-weight: 600; font-size: 0.9rem; transition: var(--transition);">
+                            <i class="fas fa-arrow-right"></i>
+                            View Full Analysis
+                        </a>
+                    </div>
+                </div>
+            `;
+        });
+        
+        console.log('Updating results container with HTML:', peppersHtml.substring(0, 200) + '...');
+        resultsContainer.innerHTML = peppersHtml;
+    }
+    
+    function updatePagination(pagination) {
+        const paginationContainer = document.querySelector('.pagination-container');
+        if (!paginationContainer) return;
+        
+        // Update page info
+        const pageInfo = paginationContainer.querySelector('.page-info');
+        if (pageInfo) {
+            const start = ((pagination.page - 1) * currentFilters.per_page) + 1;
+            const end = Math.min(pagination.page * currentFilters.per_page, pagination.total);
+            pageInfo.textContent = `${start}-${end} of ${pagination.total}`;
+        }
+        
+        // Update navigation buttons
+        const prevBtn = paginationContainer.querySelector('.prev-btn');
+        const nextBtn = paginationContainer.querySelector('.next-btn');
+        
+        if (prevBtn) {
+            if (pagination.page > 1) {
+                prevBtn.style.pointerEvents = 'auto';
+                prevBtn.style.opacity = '1';
+                prevBtn.style.background = 'white';
+                prevBtn.style.color = '#6c757d';
+            } else {
+                prevBtn.style.pointerEvents = 'none';
+                prevBtn.style.opacity = '0.5';
+                prevBtn.style.background = '#f8f9fa';
+                prevBtn.style.color = '#adb5bd';
+            }
+        }
+        
+        if (nextBtn) {
+            if (pagination.page < pagination.pages) {
+                nextBtn.style.pointerEvents = 'auto';
+                nextBtn.style.opacity = '1';
+                nextBtn.style.background = 'white';
+                nextBtn.style.color = '#6c757d';
+            } else {
+                nextBtn.style.pointerEvents = 'none';
+                nextBtn.style.opacity = '0.5';
+                nextBtn.style.background = '#f8f9fa';
+                nextBtn.style.color = '#adb5bd';
+            }
+        }
+    }
+    
+    function showLoadingState() {
+        const resultsContainer = document.querySelector('#bellPeppers');
+        if (!resultsContainer) {
+            console.error('Could not find results container #bellPeppers for loading state');
+            return;
+        }
+        
+        resultsContainer.innerHTML = `
+            <div style="display: flex; justify-content: center; align-items: center; padding: 3rem; width: 100%;">
+                <div style="text-align: center;">
+                    <div style="width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem;"></div>
+                    <p style="color: var(--secondary); font-size: 0.9rem; margin: 0;">Loading peppers...</p>
+                </div>
+            </div>
+        `;
+    }
+    
+    function hideLoadingState() {
+        // Loading state is handled in updateResults
+    }
+    
+    // Test function to verify AJAX is working
+    function testAJAX() {
+        console.log('Testing AJAX...');
+        console.log('Current filters:', currentFilters);
+        
+        // Test with minimal request
+        const url = `/history/ajax?page=1&per_page=5`;
+        console.log('Test URL:', url);
+        
+        fetch(url)
+            .then(response => {
+                console.log('Test response status:', response.status);
+                console.log('Test response headers:', response.headers);
+                return response.text();
+            })
+            .then(data => {
+                console.log('Test response data:', data);
+                try {
+                    const jsonData = JSON.parse(data);
+                    console.log('Test JSON data:', jsonData);
+                } catch (e) {
+                    console.log('Response is not JSON, it might be HTML:', data.substring(0, 200));
+                }
+            })
+            .catch(error => {
+                console.error('Test AJAX error:', error);
+            });
+    }
+    
+    // Initialize when page loads
+    window.addEventListener('load', () => {
+        initializeFilters();
+        if (window.location.search.includes('page=')) {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    });
+    
+    // Also initialize when DOM is ready
+    document.addEventListener('DOMContentLoaded', () => {
+        initializeFilters();
+    });
+    
+    // Add spin animation CSS
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    `;
+    document.head.appendChild(style);
+</script>
+{% endblock %}
+
+

@@ -1,0 +1,43 @@
+/* New Analysis (index.html) - page-specific styles */
+
+/* Container alignment: left-align within the content area to avoid visual right shift */
+.analyze-container {
+    max-width: 1400px;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+/* Layout refinements scoped to this page */
+.hero-section {
+    margin-bottom: 2rem;
+    padding: 2rem 0;
+}
+
+.controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+
+@media (max-width: 1024px) {
+    .controls {
+        grid-template-columns: 1fr;
+    }
+}
+
+.video-container {
+    background: #ececec;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.file-input-container {
+    border: 2px dashed var(--gray);
+    border-radius: 12px;
+}
+
+.results-section {
+    margin-top: 2rem;
+}
+
+

@@ -1,0 +1,6 @@
+---
+alwaysApply: true
+---
+only create readme.md file when i say so
+
+when modifying code in the front end make sure to not damage the code thaat connect to the back end

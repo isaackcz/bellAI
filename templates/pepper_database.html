@@ -1,0 +1,702 @@
+{% extends "base.html" %}
+
+{% block title %}Pepper Database - PepperAI{% endblock %}
+{% block description %}Comprehensive database of bell pepper varieties and their characteristics{% endblock %}
+
+{% block extra_styles %}
+<style>
+    /* Mobile-first responsive styles for pepper_database.html */
+    html { font-size: 14px; }
+    img, video, canvas, svg { max-width: 100%; height: auto; }
+
+    .pdb-container { max-width: 100%; margin: 0 auto; }
+
+    .pdb-varieties-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; }
+    .pdb-examples-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
+    .pdb-diseases-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; }
+
+    /* Tablet */
+    @media (min-width: 768px) and (max-width: 1024px) {
+        html { font-size: 15px; }
+        .pdb-varieties-grid { grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }
+        .pdb-diseases-grid { grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }
+    }
+
+    /* Desktop */
+    @media (min-width: 1024px) {
+        html { font-size: 16px; }
+        .pdb-varieties-grid { grid-template-columns: repeat(3, 1fr); }
+        .pdb-diseases-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    /* Small phones */
+    @media (max-width: 480px) {
+        .pdb-varieties-grid { grid-template-columns: 1fr; gap: 1rem; }
+        .pdb-examples-grid { grid-template-columns: 1fr; gap: 0.5rem; }
+        .pdb-diseases-grid { grid-template-columns: 1fr; gap: 1rem; }
+    }
+</style>
+{% endblock %}
+
+{% block breadcrumb_home %}Dashboard{% endblock %}
+{% block breadcrumb %}
+    <span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+    <span class="breadcrumb-item">Pepper Database</span>
+{% endblock %}
+
+{% block content %}
+<div class="pdb-container">
+    <!-- Page Header -->
+    <div style="margin-bottom: 2rem;">
+        <h1 style="font-size: 2rem; font-weight: 700; color: var(--dark); margin-bottom: 0.5rem;">
+            <i class="fas fa-pepper-hot"></i> Bell Pepper Database
+        </h1>
+        <p style="color: var(--secondary); font-size: 1rem;">
+            Comprehensive guide to bell pepper varieties, characteristics, and quality standards
+        </p>
+    </div>
+
+    <!-- User Statistics Banner -->
+    {% if total_analyzed > 0 %}
+    <div style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%); border-radius: var(--border-radius); padding: 2rem; margin-bottom: 3rem; color: var(--dark); box-shadow: 0 8px 24px rgba(161, 194, 189, 0.2); font-weight: 600;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem;">
+            <div>
+                <h3 style="font-size: 1.5rem; font-weight: 700; margin: 0 0 0.5rem 0;">Your Analysis Summary</h3>
+                <p style="opacity: 0.9; margin: 0;">You've analyzed peppers from {{ user_stats|length }} different varieties</p>
+            </div>
+            <div style="text-align: right;">
+                <div style="font-size: 3rem; font-weight: 700; line-height: 1;">{{ total_analyzed }}</div>
+                <div style="font-size: 0.9rem; opacity: 0.9;">Total Peppers Analyzed</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Search Bar -->
+    <div style="margin-bottom: 2rem;">
+        <div style="position: relative; max-width: 500px;">
+            <input type="text" id="searchInput" placeholder="Search pepper varieties..."
+                   oninput="filterPeppers()"
+                   style="width: 100%; padding: 1rem 1rem 1rem 3rem; border: 2px solid var(--gray); border-radius: var(--border-radius); font-family: 'Inter', sans-serif; font-size: 1rem; transition: all 0.2s;"
+                   onfocus="this.style.borderColor='var(--primary)'; this.style.boxShadow='0 0 0 3px rgba(79, 70, 229, 0.1)';"
+                   onblur="this.style.borderColor='var(--gray)'; this.style.boxShadow='none';">
+            <i class="fas fa-search" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--secondary); font-size: 1rem;"></i>
+        </div>
+    </div>
+
+    <!-- Pepper Types and Varieties -->
+    <div id="peppersContainer" style="margin-bottom: 3rem;">
+        {% for type_data in types_data %}
+        <!-- Type Section -->
+        <div class="pepper-type-section" data-type="{{ type_data.type_info.name|lower }}" style="margin-bottom: 4rem;">
+            <!-- Type Header -->
+            <div style="background: linear-gradient(135deg, {{ type_data.type_info.color }}15, {{ type_data.type_info.color }}25); border-left: 5px solid {{ type_data.type_info.color }}; padding: 1.5rem 2rem; border-radius: var(--border-radius); margin-bottom: 2rem; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                <h2 style="font-size: 1.8rem; font-weight: 700; color: var(--dark); margin: 0 0 0.5rem 0; display: flex; align-items: center; gap: 0.75rem;">
+                    <i class="{{ type_data.type_info.icon }}" style="color: {{ type_data.type_info.color }}; font-size: 2rem;"></i>
+                    {{ type_data.type_info.name }}
+                </h2>
+                <p style="color: var(--secondary); font-size: 1rem; margin: 0; line-height: 1.6;">
+                    {{ type_data.type_info.description }}
+                </p>
+            </div>
+            
+            <!-- Varieties Grid for this Type -->
+            <div class="pdb-varieties-grid">
+                {% for variety_info in type_data.varieties %}
+                <div id="variety-{{ variety_info.id }}" class="pepper-card" data-variety="{{ variety_info.name|lower }}" 
+             style="background: var(--card-bg); backdrop-filter: blur(20px); border-radius: var(--border-radius); box-shadow: var(--box-shadow); overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.2); transition: all 0.3s; cursor: pointer;"
+             onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 15px 40px rgba(0, 0, 0, 0.15)';"
+             onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='var(--box-shadow)';"
+                     onclick="fetchAndShowVarietyDetail('{{ variety_info.name }}')">
+                    
+                    <!-- Color Header -->
+                    <div style="height: 8px; background: {{ variety_info.color }};"></div>
+                    
+                    <!-- Card Content -->
+                    <div style="padding: 2rem;">
+                        <!-- Variety Header -->
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                            <div>
+                                <h3 style="font-size: 1.4rem; font-weight: 700; color: var(--dark); margin: 0 0 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;">
+                                    <i class="fas fa-pepper-hot" style="color: {{ variety_info.color }};"></i>
+                                    {{ variety_info.name }}
+                                </h3>
+                                {% if user_stats.get(variety_info.name) %}
+                                <div style="display: inline-block; padding: 0.4rem 0.8rem; background: linear-gradient(135deg, {{ variety_info.color }}15, {{ variety_info.color }}25); border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: {{ variety_info.color }};">
+                                    <i class="fas fa-chart-line"></i> {{ user_stats[variety_info.name].count }} analyzed
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div style="width: 50px; height: 50px; background: {{ variety_info.color }}20; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                                <div style="width: 30px; height: 30px; background: {{ variety_info.color }}; border-radius: 50%;"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Description -->
+                        <p style="color: var(--secondary); font-size: 0.9rem; line-height: 1.6; margin-bottom: 1.5rem;">
+                            {{ variety_info.description }}
+                        </p>
+                        
+                        <!-- Key Characteristics -->
+                        <div style="margin-bottom: 1.5rem;">
+                            <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--dark); margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                                Key Characteristics
+                            </h4>
+                            <ul style="margin: 0; padding-left: 1.2rem; color: var(--secondary); font-size: 0.85rem; line-height: 1.8;">
+                                {% for characteristic in variety_info.characteristics[:2] %}
+                                <li>{{ characteristic }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        
+                        <!-- User Stats (if available) -->
+                        {% if user_stats.get(variety_info.name) %}
+                        <div style="padding: 1rem; background: linear-gradient(135deg, {{ variety_info.color }}08, {{ variety_info.color }}15); border-radius: var(--border-radius-sm); border-left: 3px solid {{ variety_info.color }};">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <div style="font-size: 0.75rem; color: var(--secondary); font-weight: 600; margin-bottom: 0.25rem;">Your Average Quality</div>
+                                    <div style="font-size: 1.5rem; font-weight: 700; color: {{ variety_info.color }};">{{ user_stats[variety_info.name].avg_quality }}%</div>
+                                </div>
+                                <i class="fas fa-star" style="font-size: 2rem; color: {{ variety_info.color }}; opacity: 0.3;"></i>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Example Peppers (if available) -->
+                        {% if example_peppers.get(variety_info.name) %}
+                        <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid rgba(0, 0, 0, 0.08);">
+                            <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--dark); margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                                Example Analyzed Peppers
+                            </h4>
+                            <div class="pdb-examples-grid">
+                                {% for pepper in example_peppers[variety_info.name] %}
+                                <div style="position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; border: 2px solid {{ variety_info.color }}30; cursor: pointer;"
+                                     onclick="event.stopPropagation(); window.location.href='{{ url_for('history.pepper_detail', pepper_id=pepper.id) }}';"
+                                     onmouseover="this.style.transform='scale(1.05)'; this.style.borderColor='{{ variety_info.color }}';"
+                                     onmouseout="this.style.transform='scale(1)'; this.style.borderColor='{{ variety_info.color }}30';"
+                                     title="Quality: {{ pepper.quality_score|round|int }}% - Click to view details">
+                                    <img src="/results/{{ pepper.crop_path }}?t={{ pepper.created_at.timestamp() }}" 
+                                         alt="Example {{ variety_info.name }}" 
+                                         style="width: 100%; height: 100%; object-fit: cover;">
+                                    <div style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent); padding: 0.5rem 0.25rem 0.25rem; text-align: center;">
+                                        <span style="color: white; font-size: 0.7rem; font-weight: 700;">{{ pepper.quality_score|round|int }}%</span>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- View Details Button -->
+                        <div style="margin-top: 1.5rem; text-align: center;">
+                            <span style="color: {{ variety_info.color }}; font-weight: 600; font-size: 0.9rem;">
+                                Click to view details <i class="fas fa-arrow-right"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- No Results Message -->
+    <div id="noResults" style="display: none; text-align: center; padding: 3rem; color: var(--secondary);">
+        <i class="fas fa-search" style="font-size: 3rem; opacity: 0.3; margin-bottom: 1rem;"></i>
+        <p style="font-size: 1.1rem; font-weight: 600;">No pepper varieties found</p>
+        <p>Try adjusting your search terms</p>
+    </div>
+    
+    <!-- Diseases Section -->
+    {% if diseases %}
+    <div style="margin-top: 4rem; padding-top: 3rem; border-top: 2px solid rgba(0, 0, 0, 0.1);">
+        <div style="margin-bottom: 2rem;">
+            <h2 style="font-size: 2rem; font-weight: 700; color: var(--dark); margin-bottom: 0.5rem;">
+                <i class="fas fa-virus" style="color: #EF4444;"></i> Common Bell Pepper Diseases
+            </h2>
+            <p style="color: var(--secondary); font-size: 1rem;">
+                Comprehensive guide to identifying, preventing, and treating bell pepper diseases
+            </p>
+        </div>
+        
+        <!-- Diseases Grid -->
+        <div class="pdb-diseases-grid">
+            {% for disease in diseases %}
+            <div id="disease-{{ disease.id }}" class="disease-card" 
+                 data-disease="{{ disease|tojson|forceescape }}"
+                 style="background: var(--card-bg); backdrop-filter: blur(20px); border-radius: var(--border-radius); box-shadow: var(--box-shadow); overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.2); transition: all 0.3s; cursor: pointer;"
+                 onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 15px 40px rgba(0, 0, 0, 0.15)';"
+                 onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='var(--box-shadow)';"
+                 onclick="showDiseaseDetailFromCard(this)">
+                
+                <!-- Severity Header -->
+                <div style="height: 8px; background: {{ disease.color }};"></div>
+                
+                <!-- Card Content -->
+                <div style="padding: 2rem;">
+                    <!-- Disease Header -->
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                        <div style="flex: 1;">
+                            <h3 style="font-size: 1.3rem; font-weight: 700; color: var(--dark); margin: 0 0 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;">
+                                <i class="{{ disease.icon }}" style="color: {{ disease.color }};"></i>
+                                {{ disease.name }}
+                            </h3>
+                            <p style="font-size: 0.8rem; color: var(--secondary); font-style: italic; margin: 0;">
+                                {{ disease.scientific_name }}
+                            </p>
+                        </div>
+                        <div style="padding: 0.4rem 0.8rem; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; 
+                            {% if disease.severity == 'severe' %}background: rgba(239, 68, 68, 0.15); color: #DC2626;
+                            {% elif disease.severity == 'moderate' %}background: rgba(245, 158, 11, 0.15); color: #F59E0B;
+                            {% else %}background: rgba(16, 185, 129, 0.15); color: #10B981;{% endif %}">
+                            {{ disease.severity }}
+                        </div>
+                    </div>
+                    
+                    <!-- Description -->
+                    <p style="color: var(--secondary); font-size: 0.9rem; line-height: 1.6; margin-bottom: 1.5rem;">
+                        {{ disease.description }}
+                    </p>
+                    
+                    <!-- Affected Parts -->
+                    <div style="margin-bottom: 1.5rem;">
+                        <div style="font-size: 0.8rem; font-weight: 700; color: var(--dark); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                            Affected Parts
+                        </div>
+                        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                            {% for part in disease.affected_parts.split(', ') %}
+                            <span style="padding: 0.4rem 0.8rem; background: {{ disease.color }}15; color: {{ disease.color }}; border-radius: 15px; font-size: 0.75rem; font-weight: 600;">
+                                {{ part }}
+                            </span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <!-- Key Symptoms (first 3) -->
+                    <div style="margin-bottom: 1rem;">
+                        <div style="font-size: 0.8rem; font-weight: 700; color: var(--dark); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                            Key Symptoms
+                        </div>
+                        <ul style="margin: 0; padding-left: 1.2rem; color: var(--secondary); font-size: 0.85rem; line-height: 1.8;">
+                            {% for symptom in disease.symptoms[:3] %}
+                            <li>{{ symptom }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    
+                    <!-- View Details Button -->
+                    <div style="margin-top: 1.5rem; text-align: center; padding: 0.75rem; background: {{ disease.color }}10; border-radius: var(--border-radius-sm); transition: all 0.2s;"
+                         onmouseover="this.style.background='{{ disease.color }}20';"
+                         onmouseout="this.style.background='{{ disease.color }}10';">
+                        <span style="color: {{ disease.color }}; font-weight: 600; font-size: 0.9rem;">
+                            <i class="fas fa-info-circle"></i> Click for full details <i class="fas fa-arrow-right"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Variety Detail Modal -->
+<div id="varietyModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 10000; overflow-y: auto; padding: 2rem; backdrop-filter: blur(10px);" onclick="closeVarietyModal()">
+    <div style="max-width: 900px; margin: 2rem auto; background: white; border-radius: var(--border-radius); box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5); position: relative;" onclick="event.stopPropagation()">
+        <!-- Close Button -->
+        <button onclick="closeVarietyModal()" style="position: absolute; top: 1rem; right: 1rem; background: rgba(0, 0, 0, 0.1); border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: var(--dark); transition: all 0.2s; z-index: 10;"
+                onmouseover="this.style.background='#ef4444'; this.style.color='white';" 
+                onmouseout="this.style.background='rgba(0, 0, 0, 0.1)'; this.style.color='var(--dark)';">
+            <i class="fas fa-times"></i>
+        </button>
+        
+        <!-- Modal Content -->
+        <div id="modalContent"></div>
+    </div>
+</div>
+
+<script>
+    function filterPeppers() {
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        const cards = document.querySelectorAll('.pepper-card');
+        const sections = document.querySelectorAll('.pepper-type-section');
+        let visibleCount = 0;
+        
+        sections.forEach(section => {
+            const sectionCards = section.querySelectorAll('.pepper-card');
+            let sectionHasVisible = false;
+            
+            sectionCards.forEach(card => {
+                const varietyName = card.getAttribute('data-variety');
+                if (varietyName.includes(searchTerm)) {
+                    card.style.display = 'block';
+                    visibleCount++;
+                    sectionHasVisible = true;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+            
+            // Show/hide entire section based on whether it has visible cards
+            section.style.display = sectionHasVisible ? 'block' : 'none';
+        });
+        
+        // Show/hide no results message
+        document.getElementById('noResults').style.display = visibleCount === 0 ? 'block' : 'none';
+    }
+    
+    function fetchAndShowVarietyDetail(varietyName) {
+        // Show loading state
+        const modal = document.getElementById('varietyModal');
+        const modalContent = document.getElementById('modalContent');
+        
+        modalContent.innerHTML = '<div style="padding: 3rem; text-align: center;"><i class="fas fa-spinner fa-spin" style="font-size: 3rem; color: var(--primary);"></i><p style="margin-top: 1rem; color: var(--secondary);">Loading variety details...</p></div>';
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+        
+        // Fetch data from API
+        fetch(`/pepper-database/variety/${encodeURIComponent(varietyName)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    modalContent.innerHTML = '<div style="padding: 3rem; text-align: center; color: var(--error);"><i class="fas fa-exclamation-circle" style="font-size: 3rem;"></i><p style="margin-top: 1rem;">' + data.error + '</p></div>';
+                } else {
+                    showVarietyDetail(data.variety_name, data.info, data.user_data);
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching variety details:', error);
+                modalContent.innerHTML = '<div style="padding: 3rem; text-align: center; color: var(--error);"><i class="fas fa-exclamation-circle" style="font-size: 3rem;"></i><p style="margin-top: 1rem;">Failed to load variety details. Please try again.</p></div>';
+            });
+    }
+    
+    function showVarietyDetail(varietyName, varietyInfo, userData) {
+        const modal = document.getElementById('varietyModal');
+        const modalContent = document.getElementById('modalContent');
+        
+        // Build modal content
+        let html = `
+            <!-- Color Header -->
+            <div style="height: 10px; background: ${varietyInfo.color}; border-radius: var(--border-radius) var(--border-radius) 0 0;"></div>
+            
+            <!-- Header Section -->
+            <div style="padding: 2rem; background: linear-gradient(135deg, ${varietyInfo.color}10, ${varietyInfo.color}20);">
+                <h2 style="font-size: 2rem; font-weight: 700; color: var(--dark); margin: 0 0 1rem 0; display: flex; align-items: center; gap: 1rem;">
+                    <i class="fas fa-pepper-hot" style="color: ${varietyInfo.color}; font-size: 2.5rem;"></i>
+                    ${varietyName}
+                </h2>
+                <p style="color: var(--secondary); font-size: 1.1rem; line-height: 1.6; margin: 0;">
+                    ${varietyInfo.description}
+                </p>
+            </div>
+            
+            <div style="padding: 2rem;">
+                <!-- User Statistics (if available) -->
+                ${userData && userData.total_analyzed > 0 ? `
+                <div style="background: linear-gradient(135deg, ${varietyInfo.color}08, ${varietyInfo.color}15); border-radius: var(--border-radius); padding: 1.5rem; margin-bottom: 2rem; border-left: 4px solid ${varietyInfo.color};">
+                    <h3 style="font-size: 1rem; font-weight: 700; color: var(--dark); margin-bottom: 1rem;">
+                        <i class="fas fa-chart-line"></i> Your Statistics for this Variety
+                    </h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
+                        <div style="text-align: center; padding: 1rem; background: white; border-radius: var(--border-radius-sm);">
+                            <div style="font-size: 2rem; font-weight: 700; color: ${varietyInfo.color};">${userData.total_analyzed}</div>
+                            <div style="font-size: 0.85rem; color: var(--secondary);">Peppers Analyzed</div>
+                        </div>
+                        <div style="text-align: center; padding: 1rem; background: white; border-radius: var(--border-radius-sm);">
+                            <div style="font-size: 2rem; font-weight: 700; color: ${varietyInfo.color};">${userData.average_quality}%</div>
+                            <div style="font-size: 0.85rem; color: var(--secondary);">Average Quality</div>
+                        </div>
+                    </div>
+                </div>
+                ` : ''}
+                
+                <!-- Example Analyzed Peppers -->
+                ${userData && userData.example_peppers && userData.example_peppers.length > 0 ? `
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="font-size: 1.2rem; font-weight: 700; color: var(--dark); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-images" style="color: ${varietyInfo.color};"></i>
+                        Example Analyzed Peppers
+                    </h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem;">
+                        ${userData.example_peppers.map(pepper => `
+                            <a href="/pepper/${pepper.id}" style="text-decoration: none;">
+                                <div style="position: relative; border-radius: var(--border-radius-sm); overflow: hidden; border: 2px solid ${varietyInfo.color}30; cursor: pointer; transition: all 0.2s;"
+                                     onmouseover="this.style.transform='translateY(-5px)'; this.style.borderColor='${varietyInfo.color}'; this.style.boxShadow='0 8px 20px rgba(0,0,0,0.15)';"
+                                     onmouseout="this.style.transform='translateY(0)'; this.style.borderColor='${varietyInfo.color}30'; this.style.boxShadow='none';">
+                                    <div style="aspect-ratio: 1; position: relative;">
+                                        <img src="/results/${pepper.crop_path}?t=${pepper.timestamp}" 
+                                             alt="Example ${varietyName}" 
+                                             style="width: 100%; height: 100%; object-fit: cover;">
+                                        <div style="position: absolute; top: 0.5rem; right: 0.5rem; background: ${
+                                            pepper.quality_score >= 80 ? 'linear-gradient(135deg, #10b981, #059669)' :
+                                            pepper.quality_score >= 60 ? 'linear-gradient(135deg, #3b82f6, #2563eb)' :
+                                            pepper.quality_score >= 40 ? 'linear-gradient(135deg, #f59e0b, #f97316)' :
+                                            'linear-gradient(135deg, #ef4444, #dc2626)'
+                                        }; color: white; padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.75rem; font-weight: 700; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+                                            ${pepper.quality_score}%
+                                        </div>
+                                    </div>
+                                    <div style="padding: 0.75rem; background: white;">
+                                        <div style="font-size: 0.8rem; font-weight: 600; color: var(--dark); margin-bottom: 0.25rem;">${pepper.quality_category}</div>
+                                        <div style="font-size: 0.7rem; color: var(--secondary);">
+                                            <i class="fas fa-calendar"></i> ${pepper.created_at}
+                                        </div>
+                                    </div>
+                                </div>
+                            </a>
+                        `).join('')}
+                    </div>
+                </div>
+                ` : ''}
+                
+                <!-- Characteristics -->
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="font-size: 1.2rem; font-weight: 700; color: var(--dark); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-list-ul" style="color: ${varietyInfo.color};"></i>
+                        Key Characteristics
+                    </h3>
+                    <ul style="margin: 0; padding-left: 1.5rem; color: var(--secondary); font-size: 0.95rem; line-height: 2;">
+                        ${varietyInfo.characteristics.map(char => `<li>${char}</li>`).join('')}
+                    </ul>
+                </div>
+                
+                <!-- Quality Standards -->
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="font-size: 1.2rem; font-weight: 700; color: var(--dark); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-check-circle" style="color: ${varietyInfo.color};"></i>
+                        Quality Standards
+                    </h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                        ${Object.entries(varietyInfo.quality_standards).map(([key, value]) => `
+                            <div style="padding: 1rem; background: linear-gradient(135deg, #f8f9fa, #ffffff); border-radius: var(--border-radius-sm); border: 1px solid rgba(0, 0, 0, 0.05);">
+                                <div style="font-weight: 700; color: var(--dark); font-size: 0.85rem; margin-bottom: 0.5rem; text-transform: capitalize;">
+                                    ${key.replace('_', ' ')}
+                                </div>
+                                <div style="color: var(--secondary); font-size: 0.9rem;">${value}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                
+                <!-- Uses -->
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="font-size: 1.2rem; font-weight: 700; color: var(--dark); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-utensils" style="color: ${varietyInfo.color};"></i>
+                        Culinary Uses
+                    </h3>
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
+                        ${varietyInfo.uses.map(use => `
+                            <span style="padding: 0.5rem 1rem; background: linear-gradient(135deg, ${varietyInfo.color}15, ${varietyInfo.color}25); color: ${varietyInfo.color}; border-radius: 20px; font-size: 0.85rem; font-weight: 600;">
+                                ${use}
+                            </span>
+                        `).join('')}
+                    </div>
+                </div>
+                
+                <!-- Storage & Nutrition -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+                    <div style="padding: 1.5rem; background: linear-gradient(135deg, #f0fdf4, #dcfce7); border-radius: var(--border-radius); border: 2px solid #86efac;">
+                        <h4 style="font-size: 1rem; font-weight: 700; color: #16a34a; margin-bottom: 0.75rem;">
+                            <i class="fas fa-box"></i> Storage
+                        </h4>
+                        <p style="color: #166534; font-size: 0.9rem; margin: 0;">${varietyInfo.storage}</p>
+                    </div>
+                    
+                    <div style="padding: 1.5rem; background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: var(--border-radius); border: 2px solid #fbbf24;">
+                        <h4 style="font-size: 1rem; font-weight: 700; color: #ca8a04; margin-bottom: 0.75rem;">
+                            <i class="fas fa-heart"></i> Nutrition
+                        </h4>
+                        <p style="color: #713f12; font-size: 0.9rem; margin: 0;">${varietyInfo.nutritional_highlights}</p>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        modalContent.innerHTML = html;
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+    }
+    
+    function closeVarietyModal() {
+        const modal = document.getElementById('varietyModal');
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+    
+    // Close modal on Escape key
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closeVarietyModal();
+            closeDiseaseModal();
+        }
+    });
+    
+    // Disease Detail Functions
+    function showDiseaseDetailFromCard(cardElement) {
+        try {
+            // Get disease data from data attribute
+            const diseaseJson = cardElement.getAttribute('data-disease');
+            const disease = JSON.parse(diseaseJson);
+            showDiseaseDetail(disease);
+        } catch (error) {
+            console.error('Error parsing disease data:', error);
+            alert('Error loading disease details. Please try again.');
+        }
+    }
+    
+    function showDiseaseDetail(disease) {
+        // Reuse the variety modal for disease details
+        const modal = document.getElementById('varietyModal');
+        const modalContent = document.getElementById('modalContent');
+        
+        // Clear any previous content
+        modalContent.innerHTML = '';
+        
+        console.log('Showing disease detail for:', disease.name);
+        
+        // Build detailed disease information
+        let html = `
+            <!-- Color Header -->
+            <div style="height: 10px; background: ${disease.color}; border-radius: var(--border-radius) var(--border-radius) 0 0;"></div>
+            
+            <!-- Header Section -->
+            <div style="padding: 2rem; background: linear-gradient(135deg, ${disease.color}10, ${disease.color}20);">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                    <h2 style="font-size: 2rem; font-weight: 700; color: var(--dark); margin: 0; display: flex; align-items: center; gap: 1rem;">
+                        <i class="${disease.icon}" style="color: ${disease.color}; font-size: 2.5rem;"></i>
+                        ${disease.name}
+                    </h2>
+                    <div style="padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.85rem; font-weight: 700; text-transform: uppercase; 
+                        background: ${disease.severity === 'severe' ? 'rgba(239, 68, 68, 0.2)' : disease.severity === 'moderate' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.2)'}; 
+                        color: ${disease.color};">
+                        ${disease.severity}
+                    </div>
+                </div>
+                <p style="font-style: italic; color: var(--secondary); font-size: 1rem; margin: 0 0 1rem 0;">
+                    ${disease.scientific_name}
+                </p>
+                <p style="color: var(--secondary); font-size: 1.05rem; line-height: 1.6; margin: 0;">
+                    ${disease.description}
+                </p>
+            </div>
+            
+            <div style="padding: 2rem;">
+                <!-- Disease Photos -->
+                ${disease.images && disease.images.length > 0 ? `
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="font-size: 1.2rem; font-weight: 700; color: var(--dark); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-images" style="color: ${disease.color};"></i>
+                        Disease Photos
+                    </h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                        ${disease.images.map((imageUrl, index) => `
+                            <div style="position: relative; aspect-ratio: 4/3; border-radius: var(--border-radius-sm); overflow: hidden; border: 2px solid ${disease.color}30; cursor: pointer; transition: all 0.2s;"
+                                 onclick="openImageInNewTab('${imageUrl}')"
+                                 onmouseover="this.style.borderColor='${disease.color}'; this.style.transform='scale(1.05)';"
+                                 onmouseout="this.style.borderColor='${disease.color}30'; this.style.transform='scale(1)';">
+                                <img src="${imageUrl}" 
+                                     alt="${disease.name} - Photo ${index + 1}" 
+                                     style="width: 100%; height: 100%; object-fit: cover;"
+                                     onerror="this.parentElement.innerHTML='<div style=\\'display: flex; align-items: center; justify-content: center; height: 100%; background: rgba(0,0,0,0.05); color: var(--secondary); font-size: 0.8rem;\\'>Image unavailable</div>';">
+                                <div style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(to top, rgba(0,0,0,0.7), transparent); padding: 0.5rem; text-align: center;">
+                                    <span style="color: white; font-size: 0.75rem; font-weight: 600;">Photo ${index + 1}</span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <p style="margin-top: 0.75rem; font-size: 0.75rem; color: var(--secondary); text-align: center;">
+                        <i class="fas fa-info-circle"></i> Click photos to view full size
+                    </p>
+                </div>
+                ` : ''}
+                
+                <!-- Affected Parts -->
+                <div style="margin-bottom: 2rem; padding: 1.5rem; background: linear-gradient(135deg, ${disease.color}08, ${disease.color}15); border-radius: var(--border-radius); border-left: 4px solid ${disease.color};">
+                    <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--dark); margin-bottom: 1rem;">
+                        <i class="fas fa-crosshairs" style="color: ${disease.color};"></i> Affected Parts
+                    </h3>
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
+                        ${disease.affected_parts.split(', ').map(part => `
+                            <span style="padding: 0.5rem 1rem; background: white; color: ${disease.color}; border: 2px solid ${disease.color}; border-radius: 20px; font-size: 0.9rem; font-weight: 600;">
+                                ${part}
+                            </span>
+                        `).join('')}
+                    </div>
+                </div>
+                
+                <!-- Symptoms -->
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="font-size: 1.2rem; font-weight: 700; color: var(--dark); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-stethoscope" style="color: ${disease.color};"></i>
+                        Symptoms
+                    </h3>
+                    <ul style="margin: 0; padding-left: 1.5rem; color: var(--secondary); font-size: 0.95rem; line-height: 2;">
+                        ${disease.symptoms.map(symptom => `<li>${symptom}</li>`).join('')}
+                    </ul>
+                </div>
+                
+                <!-- Causes -->
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="font-size: 1.2rem; font-weight: 700; color: var(--dark); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-question-circle" style="color: ${disease.color};"></i>
+                        Causes
+                    </h3>
+                    <ul style="margin: 0; padding-left: 1.5rem; color: var(--secondary); font-size: 0.95rem; line-height: 2;">
+                        ${disease.causes.map(cause => `<li>${cause}</li>`).join('')}
+                    </ul>
+                </div>
+                
+                <!-- Prevention & Treatment -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+                    <!-- Prevention -->
+                    <div style="padding: 1.5rem; background: linear-gradient(135deg, #10b98110, #10b98120); border-radius: var(--border-radius); border: 2px solid #10b981;">
+                        <h3 style="font-size: 1.1rem; font-weight: 700; color: #10b981; margin-bottom: 1rem;">
+                            <i class="fas fa-shield-alt"></i> Prevention
+                        </h3>
+                        <ul style="margin: 0; padding-left: 1.5rem; color: var(--secondary); font-size: 0.9rem; line-height: 1.8;">
+                            ${disease.prevention.map(method => `<li>${method}</li>`).join('')}
+                        </ul>
+                    </div>
+                    
+                    <!-- Treatment -->
+                    <div style="padding: 1.5rem; background: linear-gradient(135deg, #3b82f610, #3b82f620); border-radius: var(--border-radius); border: 2px solid #3b82f6;">
+                        <h3 style="font-size: 1.1rem; font-weight: 700; color: #3b82f6; margin-bottom: 1rem;">
+                            <i class="fas fa-medkit"></i> Treatment
+                        </h3>
+                        <ul style="margin: 0; padding-left: 1.5rem; color: var(--secondary); font-size: 0.9rem; line-height: 1.8;">
+                            ${disease.treatment.map(method => `<li>${method}</li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        modalContent.innerHTML = html;
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+        
+        // Scroll to top of modal
+        modal.scrollTop = 0;
+        
+        console.log('Disease detail displayed:', disease.name);
+    }
+    
+    function closeDiseaseModal() {
+        closeVarietyModal();  // Use the same close function
+    }
+    
+    // Ensure clicking background closes disease modal too
+    document.getElementById('varietyModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeDiseaseModal();
+        }
+    });
+    
+    // Helper function to open image in new tab
+    function openImageInNewTab(imageUrl) {
+        window.open(imageUrl, '_blank');
+    }
+</script>
+{% endblock %}
+

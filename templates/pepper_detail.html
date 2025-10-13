@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block title %}{{ pepper.variety }} Details - PepperAI{% endblock %}
+{% block description %}Detailed analysis of bell pepper {{ pepper.pepper_id }}{% endblock %}
+
+{% block extra_styles %}
+<style>
+    /* Mobile-first responsive styles for pepper_detail.html */
+    html { font-size: 14px; }
+    img, video, canvas, svg { max-width: 100%; height: auto; }
+
+    .pdetail-container { max-width: 100%; margin: 0 auto; }
+    .pdetail-header { display: grid; grid-template-columns: auto 1fr; gap: 1rem; align-items: center; }
+    .pdetail-quality-metrics { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+
+    /* Tablet */
+    @media (min-width: 768px) {
+        html { font-size: 15px; }
+        .pdetail-header { grid-template-columns: auto 1fr auto; }
+        .pdetail-quality-metrics { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    /* Desktop */
+    @media (min-width: 1024px) {
+        html { font-size: 16px; }
+        .pdetail-quality-metrics { grid-template-columns: repeat(4, 1fr); }
+    }
+
+    /* Small phones */
+    @media (max-width: 480px) {
+        .pdetail-header { grid-template-columns: 1fr; }
+        .pdetail-quality-metrics { grid-template-columns: 1fr; }
+    }
+</style>
+{% endblock %}
+
+{% block breadcrumb_home %}Dashboard{% endblock %}
+{% block breadcrumb %}
+    <span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+    <span class="breadcrumb-item"><a href="{{ url_for('history.history') }}" style="color: var(--secondary); text-decoration: none;">History</a></span>
+    <span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+    <span class="breadcrumb-item">{{ pepper.pepper_id }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="pdetail-container">
+    <!-- Back Button -->
+    <div style="margin-bottom: 2rem;">
+        <a href="{{ url_for('history.history') }}" style="display: inline-flex; align-items: center; gap: 0.5rem; color: var(--primary); text-decoration: none; font-weight: 500;">
+            <i class="fas fa-arrow-left"></i> Back to History
+        </a>
+    </div>
+
+    <!-- Pepper Detail Card -->
+    <div style="background: var(--card-bg); backdrop-filter: blur(20px); border-radius: var(--border-radius); box-shadow: var(--box-shadow); padding: 2rem; border: 1px solid rgba(255, 255, 255, 0.2);">
+        <!-- Header Section (responsive) -->
+        <div class="pdetail-header" style="padding: 0.75rem 0; margin-bottom: 2rem;">
+            {% if pepper.crop_path %}
+            <img src="/results/{{ pepper.crop_path }}?t={{ pepper.created_at.timestamp() }}" 
+                 alt="Bell Pepper {{ pepper.pepper_id }}" 
+                 class="pdetail-image"
+                 style="width: 120px; height: 120px; border-radius: 12px; object-fit: cover; border: 3px solid #ffffff; box-shadow: 0 8px 25px rgba(79, 70, 229, 0.2);">
+            {% endif %}
+            
+            <div class="pepper-info">
+                <div class="pepper-title">
+                    <h1 class="pepper-name" style="font-size: 1.75rem; font-weight: 700; color: #1e293b; margin: 0;">
+                        <i class="fas fa-pepper-hot" style="color: var(--primary);"></i>
+                        {{ pepper.variety }}
+                    </h1>
+                    <span class="pepper-id-badge" style="background: linear-gradient(135deg, var(--primary), var(--primary-hover)); color: var(--dark); padding: 0.4rem 0.8rem; border-radius: 12px; font-size: 0.8rem; font-weight: 700;">
+                        {{ pepper.pepper_id }}
+                    </span>
+                </div>
+                <p class="pepper-confidence" style="color: #64748b; font-size: 0.9rem; margin: 0.5rem 0;">
+                    <i class="fas fa-eye" style="color: var(--primary);"></i>
+                    {{ (pepper.confidence * 100)|round|int }}% detection confidence
+                </p>
+                <p style="color: var(--secondary); font-size: 0.85rem;">
+                    <i class="fas fa-clock"></i> {{ pepper.created_at.strftime('%B %d, %Y at %I:%M %p') }}
+                </p>
+            </div>
+            
+            <div class="quality-score" style="padding: 0.8rem 1.5rem; border-radius: 25px; font-weight: 700; font-size: 1rem; 
+                {% if pepper.quality_score >= 80 %}background: linear-gradient(135deg, #dcfce7, #bbf7d0); color: #16a34a; border: 3px solid rgba(22, 163, 74, 0.3);
+                {% elif pepper.quality_score >= 60 %}background: linear-gradient(135deg, #dbeafe, #bfdbfe); color: #2563eb; border: 3px solid rgba(37, 99, 235, 0.3);
+                {% elif pepper.quality_score >= 40 %}background: linear-gradient(135deg, #fef3c7, #fde68a); color: #d97706; border: 3px solid rgba(217, 119, 6, 0.3);
+                {% else %}background: linear-gradient(135deg, #fecaca, #fca5a5); color: #dc2626; border: 3px solid rgba(220, 38, 38, 0.3);
+                {% endif %}">
+                {{ pepper.quality_category }}<br>
+                <span style="font-size: 1.5rem;">{{ pepper.quality_score|round|int }}/100</span>
+            </div>
+        </div>
+        
+        <!-- Quality Metrics -->
+        <div class="pdetail-quality-metrics" style="margin: 2rem 0; padding: 1.5rem; background: linear-gradient(135deg, rgba(247, 249, 255, 0.7) 0%, rgba(255,255,255,0.9) 60%); border-radius: var(--border-radius-sm);">
+            <div class="metric-card" style="text-align: center;">
+                <div class="stat-icon" style="width: 50px; height: 50px; background: var(--primary-light); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--primary); font-size: 1.5rem; margin: 0 auto 0.75rem;">
+                    <i class="fas fa-palette"></i>
+                </div>
+                <div class="metric-value" style="font-size: 1.5rem; font-weight: 700; color: #1e293b; margin-bottom: 0.25rem;">
+                    {{ pepper.color_uniformity|round|int }}%
+                </div>
+                <div class="metric-label" style="font-size: 0.85rem; color: #475569; font-weight: 600;">Color Uniformity</div>
+            </div>
+            
+            <div class="metric-card" style="text-align: center;">
+                <div class="stat-icon" style="width: 50px; height: 50px; background: var(--success-light); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--success); font-size: 1.5rem; margin: 0 auto 0.75rem;">
+                    <i class="fas fa-ruler-combined"></i>
+                </div>
+                <div class="metric-value" style="font-size: 1.5rem; font-weight: 700; color: #1e293b; margin-bottom: 0.25rem;">
+                    {{ pepper.size_consistency|round|int }}%
+                </div>
+                <div class="metric-label" style="font-size: 0.85rem; color: #475569; font-weight: 600;">Size Consistency</div>
+            </div>
+            
+            <div class="metric-card" style="text-align: center;">
+                <div class="stat-icon" style="width: 50px; height: 50px; background: var(--info-light); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--info); font-size: 1.5rem; margin: 0 auto 0.75rem;">
+                    <i class="fas fa-gem"></i>
+                </div>
+                <div class="metric-value" style="font-size: 1.5rem; font-weight: 700; color: #1e293b; margin-bottom: 0.25rem;">
+                    {{ pepper.surface_quality|round|int }}%
+                </div>
+                <div class="metric-label" style="font-size: 0.85rem; color: #475569; font-weight: 600;">Surface Quality</div>
+            </div>
+            
+            <div class="metric-card" style="text-align: center;">
+                <div class="stat-icon" style="width: 50px; height: 50px; background: var(--warning-light); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--warning); font-size: 1.5rem; margin: 0 auto 0.75rem;">
+                    <i class="fas fa-seedling"></i>
+                </div>
+                <div class="metric-value" style="font-size: 1.5rem; font-weight: 700; color: #1e293b; margin-bottom: 0.25rem;">
+                    {{ pepper.ripeness_level|round|int }}%
+                </div>
+                <div class="metric-label" style="font-size: 0.85rem; color: #475569; font-weight: 600;">Ripeness Level</div>
+            </div>
+        </div>
+        
+        <!-- Advanced Analysis (if available) -->
+        {% if pepper.advanced_analysis_data %}
+        <div style="margin: 2rem 0;">
+            <h3 style="font-size: 1.25rem; font-weight: 600; color: var(--dark); margin-bottom: 1rem;">
+                <i class="fas fa-brain" style="color: var(--primary);"></i> Advanced AI Analysis
+            </h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+                <div style="background: rgba(255, 255, 255, 0.7); padding: 1.5rem; border-radius: var(--border-radius-sm); border: 1px solid rgba(161, 194, 189, 0.15);">
+                    <p style="color: var(--secondary); margin: 0;">Advanced features available</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Recommendations -->
+        {% if pepper.recommendations_list %}
+        <div class="recommendations" style="background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px; padding: 1.5rem; margin-top: 1.5rem; position: relative;">
+            <div style="position: absolute; top: 0; left: 0; width: 5px; height: 100%; background: linear-gradient(180deg, #10b981, #059669, #047857); border-radius: 0 2px 2px 0;"></div>
+            <h4 style="color: #065f46; margin: 0 0 1rem 0; font-size: 0.85rem; font-weight: 700; display: flex; align-items: center; gap: 0.75rem; text-transform: uppercase; letter-spacing: 1px;">
+                <i class="fas fa-lightbulb" style="color: #10b981; background: rgba(16, 185, 129, 0.1); padding: 0.3rem; border-radius: 6px;"></i>
+                Recommendations
+            </h4>
+            <ul style="margin: 0; padding-left: 0; list-style: none; display: flex; flex-direction: column; gap: 0.5rem;">
+                {% for rec in pepper.recommendations_list %}
+                <li style="padding: 0.6rem 0.8rem; padding-left: 2rem; position: relative; font-size: 0.8rem; line-height: 1.5; background: rgba(255, 255, 255, 0.5); border-radius: 8px; border-left: 3px solid #10b981; font-weight: 500;">
+                    {{ rec }}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+

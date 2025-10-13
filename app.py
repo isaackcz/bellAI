@@ -1,13 +1,17 @@
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 import cv2
 import numpy as np
-from flask import Flask, render_template, request, jsonify, send_from_directory
+from flask import Flask, render_template, request, jsonify, send_from_directory, session, redirect, url_for, flash
+from functools import wraps
 from ultralytics import YOLO
 from PIL import Image
 import torch
 from python_modules.pepper_quality_analyzer import BellPepperQualityAnalyzer
 from python_modules.advanced_ai_analyzer import AdvancedPepperAnalyzer
+
+# Import models from separate file
+from models import db, User, AnalysisHistory, BellPepperDetection, PepperVariety, PepperDisease, PepperType, Notification, NotificationAttachment, NotificationRead
 
 try:
     from disease_detection.disease_integration import PepperHealthAnalyzer
@@ -23,14 +27,60 @@ except ImportError as e:
 app = Flask(__name__)
 
 # Configuration
+app.config['SECRET_KEY'] = 'your-secret-key-change-in-production'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///pepperai.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['RESULTS_FOLDER'] = 'results'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'bmp'}
 
+# Initialize database with app
+db.init_app(app)
+
 # Create directories if they don't exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['RESULTS_FOLDER'], exist_ok=True)
+
+# Register blueprints
+from routes import history_bp, statistics_bp, export_bp, pepper_database_bp, notifications_bp
+from routes.settings import settings_bp
+app.register_blueprint(history_bp)
+app.register_blueprint(statistics_bp)
+app.register_blueprint(export_bp)
+app.register_blueprint(pepper_database_bp)
+app.register_blueprint(notifications_bp)
+app.register_blueprint(settings_bp)
+
+# Create database tables
+with app.app_context():
+    db.create_all()
+    print("✅ Database tables created")
+
+# Login required decorator
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash('Please login to access this page.', 'error')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+# Admin required decorator
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash('Please login to access this page.', 'error')
+            return redirect(url_for('login'))
+        user = User.query.get(session['user_id'])
+        if not user or user.role != 'admin':
+            flash('Admin access required.', 'error')
+            return redirect(url_for('dashboard'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 # Multi-Model Setup: General YOLOv8 + Specialized Bell Pepper + Advanced Quality Analysis + Disease Detection + AI Features
 MODELS = {
@@ -564,7 +614,197 @@ def detect_diseases(image_path):
     return diseases
 
 @app.route('/')
-def index():
+def landing():
+    if 'user_id' in session:
+        return redirect(url_for('dashboard'))
+    return redirect(url_for('login'))
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if 'user_id' in session:
+        return redirect(url_for('dashboard'))
+    
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+        remember = request.form.get('remember')
+        
+        user = User.query.filter_by(email=email).first()
+        
+        if user and user.check_password(password):
+            session['user_id'] = user.id
+            session['username'] = user.username
+            session['role'] = user.role
+            
+            if remember:
+                session.permanent = True
+            
+            user.last_login = datetime.utcnow()
+            db.session.commit()
+            
+            flash(f'Welcome back, {user.full_name or user.username}!', 'success')
+            return redirect(url_for('dashboard'))
+        else:
+            flash('Invalid email or password.', 'error')
+    
+    return render_template('login.html')
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if 'user_id' in session:
+        return redirect(url_for('dashboard'))
+    
+    if request.method == 'POST':
+        username = request.form.get('username')
+        email = request.form.get('email')
+        full_name = request.form.get('full_name')
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+        
+        # Validation
+        if not all([username, email, password, confirm_password]):
+            flash('All fields are required.', 'error')
+            return render_template('register.html')
+        
+        if password != confirm_password:
+            flash('Passwords do not match.', 'error')
+            return render_template('register.html')
+        
+        if len(password) < 6:
+            flash('Password must be at least 6 characters long.', 'error')
+            return render_template('register.html')
+        
+        # Check if user already exists
+        if User.query.filter_by(username=username).first():
+            flash('Username already exists.', 'error')
+            return render_template('register.html')
+        
+        if User.query.filter_by(email=email).first():
+            flash('Email already registered.', 'error')
+            return render_template('register.html')
+        
+        # Create new user
+        user = User(username=username, email=email, full_name=full_name)
+        user.set_password(password)
+        
+        db.session.add(user)
+        db.session.commit()
+        
+        flash('Registration successful! Please login.', 'success')
+        return redirect(url_for('login'))
+    
+    return render_template('register.html')
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    flash('You have been logged out.', 'success')
+    return redirect(url_for('login'))
+
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    user = User.query.get(session['user_id'])
+    recent_analyses = AnalysisHistory.query.filter_by(user_id=user.id).order_by(AnalysisHistory.created_at.desc()).limit(10).all()
+    
+    # Statistics
+    total_analyses = AnalysisHistory.query.filter_by(user_id=user.id).count()
+    total_peppers = db.session.query(db.func.sum(AnalysisHistory.peppers_found)).filter_by(user_id=user.id).scalar() or 0
+    avg_quality = db.session.query(db.func.avg(AnalysisHistory.avg_quality)).filter_by(user_id=user.id).scalar() or 0
+    
+    # Quality Distribution
+    excellent_count = BellPepperDetection.query.filter_by(user_id=user.id).filter(BellPepperDetection.quality_score >= 80).count()
+    good_count = BellPepperDetection.query.filter_by(user_id=user.id).filter(BellPepperDetection.quality_score >= 60, BellPepperDetection.quality_score < 80).count()
+    fair_count = BellPepperDetection.query.filter_by(user_id=user.id).filter(BellPepperDetection.quality_score >= 40, BellPepperDetection.quality_score < 60).count()
+    poor_count = BellPepperDetection.query.filter_by(user_id=user.id).filter(BellPepperDetection.quality_score < 40).count()
+    
+    # Variety Distribution (top 5)
+    variety_stats = db.session.query(
+        BellPepperDetection.variety,
+        db.func.count(BellPepperDetection.id).label('count')
+    ).filter_by(user_id=user.id).group_by(BellPepperDetection.variety).order_by(db.func.count(BellPepperDetection.id).desc()).limit(5).all()
+    
+    # Recent activity chart (last 7 days)
+    from datetime import datetime, timedelta
+    seven_days_ago = datetime.utcnow() - timedelta(days=7)
+    recent_peppers = BellPepperDetection.query.filter_by(user_id=user.id).filter(BellPepperDetection.created_at >= seven_days_ago).all()
+    
+    # Group by date
+    daily_counts = {}
+    for pepper in recent_peppers:
+        date_key = pepper.created_at.strftime('%Y-%m-%d')
+        if date_key not in daily_counts:
+            daily_counts[date_key] = 0
+        daily_counts[date_key] += 1
+    
+    # Fill in missing dates with 0
+    activity_data = []
+    for i in range(7):
+        date = (datetime.utcnow() - timedelta(days=6-i)).strftime('%Y-%m-%d')
+        activity_data.append({
+            'date': date,
+            'count': daily_counts.get(date, 0)
+        })
+    
+    return render_template('dashboard.html', 
+                         user=user, 
+                         recent_analyses=recent_analyses,
+                         total_analyses=total_analyses,
+                         total_peppers=total_peppers,
+                         avg_quality=round(avg_quality, 1),
+                         excellent_count=excellent_count,
+                         good_count=good_count,
+                         fair_count=fair_count,
+                         poor_count=poor_count,
+                         variety_stats=variety_stats,
+                         activity_data=activity_data)
+
+@app.route('/profile')
+@login_required
+def profile():
+    user = User.query.get(session['user_id'])
+    
+    # Get user statistics
+    total_analyses = AnalysisHistory.query.filter_by(user_id=user.id).count()
+    total_peppers = db.session.query(db.func.sum(AnalysisHistory.peppers_found)).filter_by(user_id=user.id).scalar() or 0
+    avg_quality = db.session.query(db.func.avg(AnalysisHistory.avg_quality)).filter_by(user_id=user.id).scalar() or 0
+    
+    # Get recent activity (last 20 analyses)
+    recent_activity = AnalysisHistory.query.filter_by(user_id=user.id)\
+        .order_by(AnalysisHistory.created_at.desc())\
+        .limit(20)\
+        .all()
+    
+    # Get activity stats by date (last 30 days)
+    from datetime import timedelta
+    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    recent_analyses_count = AnalysisHistory.query.filter(
+        AnalysisHistory.user_id == user.id,
+        AnalysisHistory.created_at >= thirty_days_ago
+    ).count()
+    
+    # Get quality distribution for user's peppers
+    quality_distribution = db.session.query(
+        BellPepperDetection.quality_category,
+        db.func.count(BellPepperDetection.id)
+    ).filter_by(user_id=user.id)\
+     .group_by(BellPepperDetection.quality_category)\
+     .all()
+    
+    quality_stats = {category: count for category, count in quality_distribution}
+    
+    return render_template('profile.html',
+                         user=user,
+                         total_analyses=total_analyses,
+                         total_peppers=total_peppers,
+                         avg_quality=round(avg_quality, 1),
+                         recent_activity=recent_activity,
+                         recent_analyses_count=recent_analyses_count,
+                         quality_stats=quality_stats)
+
+@app.route('/analyze')
+@login_required
+def analyze():
     return render_template('index.html')
 
 @app.route('/static/sw.js')
@@ -576,24 +816,36 @@ def manifest():
     return send_from_directory('static', 'manifest.json', mimetype='application/json')
 
 @app.route('/upload', methods=['POST'])
+@login_required
 def upload():
     # Accepts multipart/form-data with 'image' field
     if 'image' not in request.files:
         return jsonify({'error': 'No image provided'}), 400
 
     file = request.files['image']
-    if file.filename == '':
+    if not file:
         return jsonify({'error': 'No selected file'}), 400
 
-    if file and allowed_file(file.filename):
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S%f')
+    # Handle both file uploads and camera captures (blobs)
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S%f')
+    
+    # Get file extension, default to jpg if not present (for camera captures)
+    if file.filename and '.' in file.filename:
         ext = file.filename.rsplit('.', 1)[1].lower()
-        filename = f'img_{timestamp}.{ext}'
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        if ext not in app.config['ALLOWED_EXTENSIONS']:
+            return jsonify({'error': 'Invalid file type'}), 400
+    else:
+        # Default to jpg for camera captures/blobs
+        ext = 'jpg'
+    
+    filename = f'img_{timestamp}.{ext}'
+    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    
+    try:
         file.save(filepath)
 
+        # Multi-stage detection: General + Specialized + ANFIS
         try:
-            # Multi-stage detection: General + Specialized + ANFIS
             detection_results = {
                 'general_objects': [],
                 'bell_peppers': [],
@@ -658,9 +910,9 @@ def upload():
                         # Crop the bell pepper region with padding
                         x1, y1, x2, y2 = map(int, xyxy)
                         
-                        # Add padding to avoid edge effects
+                        # Add padding to avoid edge effects and show more context
                         h, w = image.shape[:2]
-                        pad = 15
+                        pad = 35  # Increased padding for better context visibility
                         x1 = max(0, x1 - pad)
                         y1 = max(0, y1 - pad)
                         x2 = min(w, x2 + pad)
@@ -987,6 +1239,55 @@ def upload():
             # Save with high quality (95% JPEG quality)
             cv2.imwrite(out_path, annotated_bgr, [cv2.IMWRITE_JPEG_QUALITY, 95])
 
+            # Save analysis to history
+            import json
+            avg_quality = np.mean([p.get('quality_analysis', {}).get('quality_score', 0) 
+                                 for p in detection_results['bell_peppers']]) if detection_results['bell_peppers'] else 0
+            
+            analysis = AnalysisHistory(
+                user_id=session['user_id'],
+                image_path=filepath,
+                result_path=out_path,
+                peppers_found=len(detection_results['bell_peppers']),
+                avg_quality=float(avg_quality),
+                analysis_data=json.dumps(detection_results['bell_peppers'][:3])  # Store first 3 peppers summary
+            )
+            db.session.add(analysis)
+            db.session.flush()  # Get analysis.id before saving peppers
+            
+            # Save each individual bell pepper detection to database
+            for pepper_data in detection_results['bell_peppers']:
+                qa = pepper_data.get('quality_analysis', {})
+                
+                # Extract crop filename from crop_url
+                crop_filename = None
+                if pepper_data.get('crop_url'):
+                    crop_filename = pepper_data['crop_url'].replace('/results/', '')
+                
+                pepper_detection = BellPepperDetection(
+                    analysis_id=analysis.id,
+                    user_id=session['user_id'],
+                    pepper_id=pepper_data.get('pepper_id', 'unknown'),
+                    variety=pepper_data.get('variety', 'Bell Pepper'),
+                    confidence=float(pepper_data.get('confidence', 0)),
+                    crop_path=crop_filename,
+                    quality_score=float(qa.get('quality_score', 0)),
+                    quality_category=qa.get('quality_category', 'Unknown'),
+                    color_uniformity=float(qa.get('color_uniformity', 0)),
+                    size_consistency=float(qa.get('size_consistency', 0)),
+                    surface_quality=float(qa.get('surface_quality', 0)),
+                    ripeness_level=float(qa.get('ripeness_level', 0)),
+                    advanced_analysis=json.dumps(pepper_data.get('advanced_analysis', {})),
+                    disease_analysis=json.dumps(pepper_data.get('disease_analysis', {})),
+                    recommendations=json.dumps(qa.get('recommendations', [])),
+                    health_status=pepper_data.get('health_status', 'Unknown'),
+                    overall_health_score=float(pepper_data.get('overall_health_score', 0))
+                )
+                db.session.add(pepper_detection)
+            
+            db.session.commit()
+            print(f"✅ Saved {len(detection_results['bell_peppers'])} peppers to database")
+            
             # Prepare multi-model response
             response_data = {
                 'result_url': f'/results/{out_name}',
@@ -995,8 +1296,7 @@ def upload():
                 'summary': {
                     'total_objects': len(detection_results['general_objects']),
                     'bell_peppers_found': len(detection_results['bell_peppers']),
-                    'avg_quality_score': np.mean([p.get('quality_analysis', {}).get('quality_score', 0) 
-                                                 for p in detection_results['bell_peppers']]) if detection_results['bell_peppers'] else 0
+                    'avg_quality_score': avg_quality
                 },
                 'message': f"Found {len(detection_results['general_objects'])} objects, {len(detection_results['bell_peppers'])} bell peppers"
             }
@@ -1004,9 +1304,14 @@ def upload():
             return jsonify(response_data)
 
         except Exception as e:
+            print(f"Processing error: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return jsonify({'error': f'Processing error: {str(e)}'}), 500
-
-    return jsonify({'error': 'Invalid file type'}), 400
+    
+    except Exception as e:
+        print(f"File save error: {str(e)}")
+        return jsonify({'error': f'Error saving file: {str(e)}'}), 500
 
 @app.route('/results/<filename>')
 def serve_result(filename):
@@ -1015,6 +1320,207 @@ def serve_result(filename):
 @app.route('/uploads/<filename>')
 def serve_upload(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+@app.route('/search')
+@login_required
+def search():
+    """
+    Comprehensive search across the entire database
+    Searches: Users, Analysis History, Bell Pepper Detections, Pepper Types, Diseases, Varieties
+    """
+    query = request.args.get('q', '').strip()
+    if not query or len(query) < 2:
+        return jsonify({'results': [], 'message': 'Search query must be at least 2 characters long'})
+    
+    results = {
+        'analyses': [],
+        'peppers': [],
+        'varieties': [],
+        'diseases': [],
+        'users': [],
+        'total_count': 0
+    }
+    
+    try:
+        user_id = session.get('user_id')
+        user_role = session.get('role', 'user')
+        
+        # Search Analysis History (accessible to current user only, or all for admins)
+        if user_role == 'admin':
+            analyses_query = AnalysisHistory.query
+        else:
+            analyses_query = AnalysisHistory.query.filter_by(user_id=user_id)
+        
+        analyses = analyses_query.join(User, AnalysisHistory.user_id == User.id).filter(
+            db.or_(
+                AnalysisHistory.analysis_data.contains(query),
+                User.username.contains(query),
+                User.full_name.contains(query)
+            )
+        ).order_by(AnalysisHistory.created_at.desc()).limit(20).all()
+        
+        for analysis in analyses:
+            results['analyses'].append({
+                'id': analysis.id,
+                'type': 'analysis',
+                'title': f'Analysis #{analysis.id}',
+                'description': f'{analysis.peppers_found} peppers found, avg quality: {analysis.avg_quality:.1f}',
+                'user': analysis.user.full_name or analysis.user.username,
+                'date': analysis.created_at.strftime('%Y-%m-%d %H:%M'),
+                'url': f'/history#analysis-{analysis.id}',
+                'scroll_target': f'analysis-{analysis.id}',
+                'metadata': {
+                    'peppers_found': analysis.peppers_found,
+                    'avg_quality': analysis.avg_quality,
+                    'image_path': analysis.image_path
+                }
+            })
+        
+        # Search Bell Pepper Detections (accessible to current user only, or all for admins)
+        if user_role == 'admin':
+            peppers_query = BellPepperDetection.query
+        else:
+            peppers_query = BellPepperDetection.query.filter_by(user_id=user_id)
+            
+        peppers = peppers_query.filter(
+            db.or_(
+                BellPepperDetection.variety.contains(query),
+                BellPepperDetection.quality_category.contains(query),
+                BellPepperDetection.health_status.contains(query),
+                BellPepperDetection.pepper_id.contains(query)
+            )
+        ).order_by(BellPepperDetection.created_at.desc()).limit(20).all()
+        
+        for pepper in peppers:
+            results['peppers'].append({
+                'id': pepper.id,
+                'type': 'pepper',
+                'title': f'{pepper.variety} - {pepper.pepper_id}',
+                'description': f'Quality: {pepper.quality_category} ({pepper.quality_score:.1f}/100)',
+                'health': pepper.health_status,
+                'date': pepper.created_at.strftime('%Y-%m-%d %H:%M'),
+                'url': f'/history#pepper-{pepper.id}',
+                'scroll_target': f'pepper-{pepper.id}',
+                'metadata': {
+                    'variety': pepper.variety,
+                    'quality_score': pepper.quality_score,
+                    'quality_category': pepper.quality_category,
+                    'confidence': pepper.confidence,
+                    'crop_url': f'/results/{pepper.crop_path}' if pepper.crop_path else None
+                }
+            })
+        
+        # Search Pepper Varieties (accessible to all authenticated users)
+        varieties = PepperVariety.query.filter(
+            db.or_(
+                PepperVariety.name.contains(query),
+                PepperVariety.description.contains(query),
+                PepperVariety.characteristics.contains(query)
+            )
+        ).limit(15).all()
+        
+        for variety in varieties:
+            results['varieties'].append({
+                'id': variety.id,
+                'type': 'variety',
+                'title': variety.name,
+                'description': variety.description or 'Bell pepper variety information',
+                'color': variety.color,
+                'date': variety.created_at.strftime('%Y-%m-%d') if variety.created_at else None,
+                'url': f'/pepper-database#variety-{variety.id}',
+                'scroll_target': f'variety-{variety.id}',
+                'metadata': {
+                    'type_id': variety.type_id,
+                    'storage': variety.storage,
+                    'nutritional_highlights': variety.nutritional_highlights
+                }
+            })
+        
+        # Search Pepper Diseases (accessible to all authenticated users)
+        diseases = PepperDisease.query.filter(
+            db.or_(
+                PepperDisease.name.contains(query),
+                PepperDisease.scientific_name.contains(query),
+                PepperDisease.description.contains(query),
+                PepperDisease.symptoms.contains(query),
+                PepperDisease.treatment.contains(query)
+            )
+        ).limit(15).all()
+        
+        for disease in diseases:
+            results['diseases'].append({
+                'id': disease.id,
+                'type': 'disease',
+                'title': disease.name,
+                'description': disease.description or 'Disease information',
+                'severity': disease.severity,
+                'affected_parts': disease.affected_parts,
+                'date': disease.created_at.strftime('%Y-%m-%d') if disease.created_at else None,
+                'url': f'/pepper-database#disease-{disease.id}',
+                'scroll_target': f'disease-{disease.id}',
+                'metadata': {
+                    'scientific_name': disease.scientific_name,
+                    'color': disease.color,
+                    'icon': disease.icon
+                }
+            })
+        
+        # Search Users (admin only)
+        if user_role == 'admin':
+            users = User.query.filter(
+                db.or_(
+                    User.username.contains(query),
+                    User.email.contains(query),
+                    User.full_name.contains(query)
+                )
+            ).filter(User.id != user_id).limit(10).all()  # Exclude current user
+            
+            for user in users:
+                # Get user stats
+                total_analyses = AnalysisHistory.query.filter_by(user_id=user.id).count()
+                total_peppers = db.session.query(db.func.sum(AnalysisHistory.peppers_found)).filter_by(user_id=user.id).scalar() or 0
+                
+                results['users'].append({
+                    'id': user.id,
+                    'type': 'user',
+                    'title': user.full_name or user.username,
+                    'description': f'{user.email} - {total_analyses} analyses, {total_peppers} peppers',
+                    'role': user.role,
+                    'last_login': user.last_login.strftime('%Y-%m-%d %H:%M') if user.last_login else 'Never',
+                    'date': user.created_at.strftime('%Y-%m-%d') if user.created_at else None,
+                    'url': f'/users#user-{user.id}',
+                    'scroll_target': f'user-{user.id}',
+                    'metadata': {
+                        'username': user.username,
+                        'email': user.email,
+                        'total_analyses': total_analyses,
+                        'total_peppers': total_peppers
+                    }
+                })
+        
+        # Calculate total count
+        results['total_count'] = (
+            len(results['analyses']) + 
+            len(results['peppers']) + 
+            len(results['varieties']) + 
+            len(results['diseases']) + 
+            len(results['users'])
+        )
+        
+        # Create summary message
+        if results['total_count'] == 0:
+            message = f'No results found for "{query}"'
+        else:
+            message = f'Found {results["total_count"]} results for "{query}"'
+            
+        results['message'] = message
+        results['query'] = query
+        
+        return jsonify(results)
+        
+    except Exception as e:
+        print(f"Search error: {e}")
+        return jsonify({'error': 'Search failed', 'message': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

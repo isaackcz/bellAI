@@ -1,0 +1,2470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover" />
+    <title>{% block title %}PepperAI{% endblock %}</title>
+    <meta name="description" content="{% block description %}AI-powered bell pepper quality assessment{% endblock %}">
+    
+    <link rel="icon" type="image/svg+xml" href="/static/images/logo.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/styles.css" />
+    <link rel="stylesheet" href="/static/css/advanced-styles.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* Admin Layout Styles */
+        .admin-layout {
+            display: flex;
+            min-height: 100vh;
+            background: var(--main-bg);
+        }
+        
+        /* Sidebar Styles */
+        .sidebar {
+            width: 280px;
+            background: #708993;
+            color: #e7f2ef;
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+            box-shadow: 4px 0 24px rgba(25, 24, 59, 0.15);
+            z-index: 1000;
+            transition: transform 0.3s ease;
+        }
+        
+        .sidebar.collapsed {
+            transform: translateX(-280px);
+        }
+        
+        .sidebar-header {
+            padding: 2rem 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            text-decoration: none;
+            color: #e7f2ef;
+        }
+        
+        .sidebar-logo-icon {
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+        }
+        
+        .sidebar-logo-icon img {
+            width: 30px;
+            height: 30px;
+            filter: brightness(0) invert(1);
+        }
+        
+        .sidebar-logo-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+        
+        .sidebar-nav {
+            padding: 1.5rem 0;
+        }
+        
+        .nav-section {
+            margin-bottom: 2rem;
+        }
+        
+        .nav-section-title {
+            padding: 0 1.5rem 0.75rem;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #e7f2ef;
+            font-weight: 600;
+        }
+        
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.875rem;
+            padding: 0.875rem 1.5rem;
+            color: #e7f2ef;
+            text-decoration: none;
+            transition: all 0.2s;
+            position: relative;
+        }
+        
+        .nav-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 0;
+            background: #e7f2ef;
+            border-radius: 0 4px 4px 0;
+            transition: height 0.2s;
+        }
+        
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #e7f2ef;
+        }
+        
+        .nav-item:hover::before {
+            height: 60%;
+        }
+        
+        .nav-item.active {
+            background: rgba(255, 255, 255, 0.15);
+            color: #e7f2ef;
+            font-weight: 600;
+        }
+        
+        .nav-item.active::before {
+            height: 60%;
+        }
+        
+        .nav-item i {
+            font-size: 1.125rem;
+            width: 24px;
+            text-align: center;
+        }
+        
+        .nav-badge {
+            margin-left: auto;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .sidebar-footer {
+            padding: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: auto;
+        }
+        
+        .sidebar-user {
+            display: flex;
+            align-items: center;
+            gap: 0.875rem;
+            padding: 0.875rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            transition: all 0.2s;
+        }
+        
+        .sidebar-user:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateX(4px);
+        }
+        
+        .sidebar-user-avatar {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 1.125rem;
+        }
+        
+        .sidebar-user-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .sidebar-user-name {
+            font-weight: 600;
+            font-size: 0.875rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: #e7f2ef;
+        }
+        
+        .sidebar-user-role {
+            font-size: 0.75rem;
+            color: #e7f2ef;
+        }
+        
+        /* Main Content Area */
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            transition: margin-left 0.3s ease;
+        }
+        
+        /* Page content padding (desktop) */
+        .page-content {
+            padding: 2rem;
+        }
+        
+        .main-content.expanded {
+            margin-left: 0;
+        }
+        
+        /* Header Styles */
+        .admin-header {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 999;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+        
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .menu-toggle {
+            display: none;
+            background: var(--primary-light);
+            color: var(--primary);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .menu-toggle:hover {
+            background: var(--primary);
+            color: var(--dark);
+        }
+        
+        .header-breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--secondary);
+            font-size: 0.875rem;
+        }
+        
+        .breadcrumb-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .breadcrumb-separator {
+            color: var(--gray);
+        }
+        
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .header-search {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--gray-light);
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            border: 1px solid var(--gray);
+            transition: var(--transition);
+            position: relative;
+        }
+        
+        .header-search:focus-within {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-light);
+        }
+        
+        .header-search input {
+            border: none;
+            background: transparent;
+            outline: none;
+            font-family: 'Inter', sans-serif;
+            width: 200px;
+        }
+        
+        .search-spinner {
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--primary);
+        }
+        
+        /* Search Suggestions Dropdown */
+        .search-suggestions {
+            position: absolute;
+            top: calc(100% + 0.5rem);
+            left: 0;
+            right: 0;
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            z-index: 1000;
+            max-height: 500px;
+            overflow: hidden;
+            border: 1px solid var(--gray);
+        }
+        
+        .search-suggestions-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1rem;
+            background: var(--gray-light);
+            border-bottom: 1px solid var(--gray);
+            font-size: 0.875rem;
+        }
+        
+        .search-query-text {
+            font-weight: 600;
+            color: var(--dark);
+        }
+        
+        .search-results-count {
+            color: var(--secondary);
+            font-size: 0.75rem;
+        }
+        
+        .search-suggestions-content {
+            max-height: 380px;
+            overflow-y: auto;
+        }
+        
+        .suggestion-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        
+        .suggestion-item:hover,
+        .suggestion-item.selected {
+            background: var(--primary-light);
+        }
+        
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+        
+        .suggestion-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: var(--border-radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--primary-light);
+            color: var(--primary);
+            font-size: 0.875rem;
+            flex-shrink: 0;
+        }
+        
+        .suggestion-thumb {
+            width: 32px;
+            height: 32px;
+            object-fit: cover;
+            border-radius: var(--border-radius-sm);
+        }
+        
+        .suggestion-content {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .suggestion-title {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--dark);
+            margin-bottom: 0.25rem;
+            line-height: 1.3;
+        }
+        
+        .suggestion-description {
+            font-size: 0.75rem;
+            color: var(--secondary);
+            line-height: 1.3;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .suggestion-type {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            background: var(--gray-light);
+            color: var(--secondary);
+            font-weight: 500;
+            flex-shrink: 0;
+        }
+        
+        .suggestion-type.quality-excellent {
+            background: var(--success-light);
+            color: var(--success);
+        }
+        
+        .suggestion-type.quality-good {
+            background: var(--info-light);
+            color: var(--info);
+        }
+        
+        .suggestion-type.quality-fair {
+            background: var(--warning-light);
+            color: var(--warning);
+        }
+        
+        .suggestion-type.quality-poor,
+        .suggestion-type.quality-unknown {
+            background: var(--danger-light);
+            color: var(--danger);
+        }
+        
+        .no-suggestions {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 2rem 1rem;
+            color: var(--secondary);
+            font-size: 0.875rem;
+        }
+        
+        .no-suggestions i {
+            color: var(--gray);
+            font-size: 1.125rem;
+        }
+        
+        .search-suggestions-footer {
+            padding: 0.75rem 1rem;
+            border-top: 1px solid var(--gray);
+            background: var(--gray-light);
+        }
+        
+        .search-view-all {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            width: 100%;
+            padding: 0.5rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius-sm);
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .search-view-all:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+        
+        /* Mobile Search Modal */
+        .mobile-search-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 10000;
+            display: none;
+        }
+        
+        .mobile-search-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+        }
+        
+        .mobile-search-container {
+            position: relative;
+            background: var(--card-bg);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            animation: mobileSlideIn 0.3s ease-out;
+        }
+        
+        @keyframes mobileSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .mobile-search-header {
+            padding: 1rem;
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--gray);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .mobile-search-input-container {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            background: var(--gray-light);
+            padding: 0.75rem 1rem;
+            border-radius: var(--border-radius);
+            border: 1px solid var(--gray);
+        }
+        
+        .mobile-search-input-container i {
+            color: var(--secondary);
+            font-size: 1.125rem;
+        }
+        
+        .mobile-search-input-container input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            outline: none;
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+        }
+        
+        .mobile-search-close {
+            background: none;
+            border: none;
+            color: var(--secondary);
+            font-size: 1.25rem;
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 50%;
+            transition: all 0.2s;
+        }
+        
+        .mobile-search-close:hover {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+        
+        .mobile-search-suggestions {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0;
+        }
+        
+        .mobile-search-suggestions-content {
+            padding: 0;
+        }
+        
+        .mobile-search-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem 2rem;
+            color: var(--secondary);
+            text-align: center;
+        }
+        
+        .mobile-search-placeholder i {
+            font-size: 2.5rem;
+            color: var(--gray);
+            margin-bottom: 1rem;
+        }
+        
+        .mobile-search-placeholder span {
+            font-size: 1rem;
+        }
+        
+        /* Mobile suggestion items (same as desktop but larger) */
+        .mobile-search-suggestions .suggestion-item {
+            padding: 1rem 1.5rem;
+            font-size: 1rem;
+        }
+        
+        .mobile-search-suggestions .suggestion-icon {
+            width: 40px;
+            height: 40px;
+            font-size: 1rem;
+        }
+        
+        .mobile-search-suggestions .suggestion-thumb {
+            width: 40px;
+            height: 40px;
+        }
+        
+        .mobile-search-suggestions .suggestion-title {
+            font-size: 1rem;
+            margin-bottom: 0.375rem;
+        }
+        
+        .mobile-search-suggestions .suggestion-description {
+            font-size: 0.875rem;
+        }
+        
+        .mobile-search-suggestions .suggestion-type {
+            font-size: 0.875rem;
+            padding: 0.375rem 0.75rem;
+        }
+        
+        .mobile-search-suggestions .no-suggestions {
+            padding: 3rem 2rem;
+            font-size: 1rem;
+        }
+        
+        .mobile-search-suggestions .no-suggestions i {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+        
+        /* Search Highlight Effect */
+        .search-highlight {
+            animation: searchHighlight 2s ease-out;
+            position: relative;
+        }
+        
+        .search-highlight::before {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: -4px;
+            right: -4px;
+            bottom: -4px;
+            background: linear-gradient(45deg, var(--primary), var(--info));
+            border-radius: var(--border-radius);
+            z-index: -1;
+            opacity: 0.3;
+            animation: searchPulse 2s ease-out;
+        }
+        
+        @keyframes searchHighlight {
+            0% {
+                background-color: var(--primary-light);
+                transform: scale(1.02);
+                box-shadow: 0 0 20px var(--primary);
+            }
+            50% {
+                background-color: var(--primary-light);
+                transform: scale(1.01);
+                box-shadow: 0 0 15px var(--primary);
+            }
+            100% {
+                background-color: transparent;
+                transform: scale(1);
+                box-shadow: none;
+            }
+        }
+        
+        @keyframes searchPulse {
+            0% {
+                opacity: 0.6;
+                transform: scale(1.05);
+            }
+            50% {
+                opacity: 0.3;
+                transform: scale(1.02);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(1);
+            }
+        }
+        
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .header-action-btn {
+            width: 40px;
+            height: 40px;
+            border: none;
+            background: transparent;
+            color: var(--secondary);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+        }
+        
+        .header-action-btn:hover {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+        
+        .header-action-btn .badge {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: var(--danger);
+            color: white;
+            font-size: 0.625rem;
+            padding: 0.125rem 0.375rem;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+        
+        /* Page Content */
+        .page-content {
+            flex: 1;
+            padding: 2rem;
+        }
+        
+        /* Footer Styles */
+        .admin-footer {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(0, 0, 0, 0.06);
+            padding: 1.5rem 2rem;
+            margin-top: auto;
+        }
+        
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .footer-text {
+            color: var(--secondary);
+            font-size: 0.875rem;
+        }
+        
+        .footer-links {
+            display: flex;
+            gap: 1.5rem;
+        }
+        
+        .footer-link {
+            color: var(--primary);
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+        
+        .footer-link:hover {
+            color: var(--primary-hover);
+        }
+        
+        /* Mobile Responsive */
+        @media (max-width: 1024px) {
+            .sidebar {
+                transform: translateX(-280px);
+            }
+            
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .menu-toggle {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .header-search {
+                display: none;
+            }
+            
+            /* Mobile Search Button */
+            .mobile-search-btn {
+                display: flex !important;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .admin-header {
+                padding: 1rem;
+            }
+            
+            .page-content {
+                padding: 1rem;
+            }
+            
+            .admin-footer {
+                padding: 1rem;
+            }
+            
+            .footer-content {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+        
+        /* Mobile Overlay */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+        
+        .sidebar-overlay.active {
+            display: block;
+        }
+        
+        /* Flash Messages */
+        .flash-messages {
+            position: fixed;
+            top: 80px;
+            right: 2rem;
+            z-index: 9999;
+            max-width: 400px;
+        }
+        
+        .flash-message {
+            padding: 1rem 1.5rem;
+            border-radius: var(--border-radius-sm);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            box-shadow: var(--box-shadow-lg);
+            animation: slideInRight 0.3s ease-out;
+        }
+        
+        .flash-success {
+            background: var(--success-light);
+            color: var(--success);
+            border-left: 4px solid var(--success);
+        }
+        
+        .flash-error {
+            background: var(--danger-light);
+            color: var(--danger);
+            border-left: 4px solid var(--danger);
+        }
+        
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        /* Search Modal Styles */
+        .search-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 10000;
+            display: none;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 2rem;
+            padding-top: 5rem;
+        }
+        
+        .search-modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+        }
+        
+        .search-modal-container {
+            position: relative;
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            width: 100%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow: hidden;
+            animation: modalSlideIn 0.3s ease-out;
+        }
+        
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        .search-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid var(--gray);
+            background: var(--gray-light);
+        }
+        
+        .search-modal-title {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--dark);
+        }
+        
+        .search-modal-title i {
+            color: var(--primary);
+        }
+        
+        .search-modal-query {
+            font-size: 0.875rem;
+            color: var(--secondary);
+            font-weight: 500;
+        }
+        
+        .search-modal-close {
+            background: none;
+            border: none;
+            color: var(--secondary);
+            font-size: 1.25rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 50%;
+            transition: all 0.2s;
+        }
+        
+        .search-modal-close:hover {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+        
+        .search-modal-body {
+            padding: 0;
+            max-height: calc(80vh - 120px);
+            overflow-y: auto;
+        }
+        
+        .search-loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem 2rem;
+            color: var(--secondary);
+        }
+        
+        .search-loading-spinner {
+            font-size: 2rem;
+            color: var(--primary);
+            margin-bottom: 1rem;
+        }
+        
+        .search-no-results {
+            text-align: center;
+            padding: 3rem 2rem;
+            color: var(--secondary);
+        }
+        
+        .no-results-icon {
+            font-size: 3rem;
+            color: var(--gray);
+            margin-bottom: 1rem;
+        }
+        
+        .search-no-results h3 {
+            margin: 0 0 0.5rem 0;
+            color: var(--dark);
+            font-size: 1.25rem;
+        }
+        
+        .search-no-results p {
+            margin: 0;
+            color: var(--secondary);
+        }
+        
+        /* Search Results */
+        .search-results {
+            padding: 0;
+        }
+        
+        .search-summary {
+            padding: 1.5rem 2rem;
+            background: var(--gray-light);
+            border-bottom: 1px solid var(--gray);
+        }
+        
+        .search-summary-text {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 0.75rem;
+        }
+        
+        .search-summary-counts {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+        
+        .result-count {
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+            background: white;
+            padding: 0.375rem 0.75rem;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--secondary);
+            border: 1px solid var(--gray);
+        }
+        
+        .result-count i {
+            color: var(--primary);
+        }
+        
+        /* Search Sections */
+        .search-section {
+            border-bottom: 1px solid var(--gray);
+        }
+        
+        .search-section:last-child {
+            border-bottom: none;
+        }
+        
+        .search-section-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem 2rem;
+            background: var(--gray-light);
+            font-weight: 600;
+            color: var(--dark);
+            border-bottom: 1px solid var(--gray);
+        }
+        
+        .search-section-header i {
+            color: var(--primary);
+        }
+        
+        .search-section-count {
+            margin-left: auto;
+            background: var(--primary);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .search-section-results {
+            padding: 0;
+        }
+        
+        /* Search Result Items */
+        .search-result-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 1rem 2rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        
+        .search-result-item:hover {
+            background: var(--gray-light);
+        }
+        
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+        
+        .search-result-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--border-radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--primary-light);
+            color: var(--primary);
+            font-size: 1.25rem;
+            flex-shrink: 0;
+        }
+        
+        .pepper-crop-thumb {
+            width: 48px;
+            height: 48px;
+            object-fit: cover;
+            border-radius: var(--border-radius-sm);
+        }
+        
+        .user-avatar {
+            width: 48px;
+            height: 48px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 1.125rem;
+        }
+        
+        .disease-icon {
+            background: var(--danger-light) !important;
+            color: var(--danger) !important;
+        }
+        
+        .search-result-content {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .search-result-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 0.25rem;
+            line-height: 1.4;
+        }
+        
+        .search-result-description {
+            font-size: 0.875rem;
+            color: var(--secondary);
+            margin-bottom: 0.5rem;
+            line-height: 1.4;
+        }
+        
+        .search-result-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .quality-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: capitalize;
+        }
+        
+        .quality-excellent {
+            background: var(--success-light);
+            color: var(--success);
+        }
+        
+        .quality-good {
+            background: var(--info-light);
+            color: var(--info);
+        }
+        
+        .quality-fair {
+            background: var(--warning-light);
+            color: var(--warning);
+        }
+        
+        .quality-poor, .quality-unknown {
+            background: var(--danger-light);
+            color: var(--danger);
+        }
+        
+        .health-badge {
+            background: var(--gray-light);
+            color: var(--secondary);
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .severity-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: capitalize;
+        }
+        
+        .severity-mild {
+            background: var(--warning-light);
+            color: var(--warning);
+        }
+        
+        .severity-moderate {
+            background: var(--info-light);
+            color: var(--info);
+        }
+        
+        .severity-severe {
+            background: var(--danger-light);
+            color: var(--danger);
+        }
+        
+        .affected-badge {
+            background: var(--gray-light);
+            color: var(--secondary);
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+        }
+        
+        .role-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: capitalize;
+        }
+        
+        .role-admin {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+        
+        .role-user {
+            background: var(--gray-light);
+            color: var(--secondary);
+        }
+        
+        .search-result-storage {
+            font-size: 0.75rem;
+            color: var(--info);
+            margin-bottom: 0.25rem;
+        }
+        
+        .search-result-scientific {
+            font-size: 0.75rem;
+            color: var(--secondary);
+            margin-bottom: 0.25rem;
+        }
+        
+        .search-result-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            font-size: 0.75rem;
+            color: var(--gray);
+        }
+        
+        .search-result-meta span {
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+        }
+        
+        .search-result-action {
+            color: var(--gray);
+            font-size: 1rem;
+            opacity: 0;
+            transition: opacity 0.2s;
+            flex-shrink: 0;
+            margin-top: 0.5rem;
+        }
+        
+        .search-result-item:hover .search-result-action {
+            opacity: 1;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .search-modal {
+                padding: 1rem;
+                padding-top: 2rem;
+            }
+            
+            .search-modal-container {
+                max-height: 85vh;
+            }
+            
+            .search-modal-header {
+                padding: 1rem 1.5rem;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+            
+            .search-modal-title {
+                font-size: 1.125rem;
+            }
+            
+            .search-summary {
+                padding: 1rem 1.5rem;
+            }
+            
+            .search-section-header {
+                padding: 0.75rem 1.5rem;
+            }
+            
+            .search-result-item {
+                padding: 1rem 1.5rem;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.75rem;
+            }
+            
+            .search-result-icon {
+                align-self: flex-start;
+            }
+            
+            .search-result-meta {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            
+            .search-result-action {
+                align-self: flex-end;
+                opacity: 1;
+            }
+            
+            .header-search {
+                display: none;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .search-summary-counts {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            
+            .result-count {
+                justify-content: center;
+            }
+        }
+        
+        /* Mobile-specific search button */
+        @media (max-width: 1024px) {
+            .mobile-search-btn {
+                display: flex !important;
+                width: 40px;
+                height: 40px;
+                border: none;
+                background: transparent;
+                color: var(--secondary);
+                border-radius: 8px;
+                cursor: pointer;
+                transition: var(--transition);
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .mobile-search-btn:hover {
+                background: var(--primary-light);
+                color: var(--primary);
+            }
+        }
+        
+        /* Animation classes */
+        .fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+    
+    {% block extra_styles %}{% endblock %}
+</head>
+<body>
+    <div class="admin-layout">
+        <!-- Sidebar -->
+        {% include 'components/sidebar.html' %}
+        
+        <!-- Sidebar Overlay (Mobile) -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+        
+        <!-- Main Content -->
+        <div class="main-content" id="mainContent">
+            <!-- Header -->
+            {% include 'components/header.html' %}
+            
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="flash-messages" id="flashMessages">
+                        {% for category, message in messages %}
+                            <div class="flash-message flash-{{ category }}">
+                                <i class="fas fa-{{ 'check-circle' if category == 'success' else 'exclamation-circle' }}"></i>
+                                <span>{{ message }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+            
+            <!-- Page Content -->
+            <div class="page-content">
+                {% block content %}{% endblock %}
+            </div>
+            
+            <!-- Footer -->
+            {% include 'components/footer.html' %}
+        </div>
+    </div>
+    
+    <!-- Mobile Search Modal -->
+    <div class="mobile-search-modal" id="mobileSearchModal" style="display: none;">
+        <div class="mobile-search-overlay" id="mobileSearchOverlay"></div>
+        <div class="mobile-search-container">
+            <div class="mobile-search-header">
+                <div class="mobile-search-input-container">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="mobileSearchInput" placeholder="Search everything..." autocomplete="off">
+                    <button class="mobile-search-close" id="mobileSearchClose">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Mobile Search Suggestions -->
+            <div class="mobile-search-suggestions" id="mobileSearchSuggestions">
+                <div class="mobile-search-suggestions-content" id="mobileSearchSuggestionsContent">
+                    <div class="mobile-search-placeholder">
+                        <i class="fas fa-search"></i>
+                        <span>Start typing to search...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Animated Background Elements -->
+    <div class="background-elements">
+        <div class="floating-shapes">
+            <div class="shape shape-1"></div>
+            <div class="shape shape-2"></div>
+            <div class="shape shape-3"></div>
+            <div class="shape shape-4"></div>
+            <div class="shape shape-5"></div>
+            <div class="shape shape-6"></div>
+        </div>
+        <div class="grid-pattern"></div>
+    </div>
+    
+    <!-- Base Scripts -->
+    <script>
+        // Mobile menu toggle
+        const menuToggle = document.getElementById('menuToggle');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const mainContent = document.getElementById('mainContent');
+        
+        if (menuToggle) {
+            menuToggle.addEventListener('click', () => {
+                sidebar.classList.toggle('open');
+                sidebarOverlay.classList.toggle('active');
+            });
+        }
+        
+        if (sidebarOverlay) {
+            sidebarOverlay.addEventListener('click', () => {
+                sidebar.classList.remove('open');
+                sidebarOverlay.classList.remove('active');
+            });
+        }
+        
+        // Auto-hide flash messages
+        setTimeout(() => {
+            const flashMessages = document.getElementById('flashMessages');
+            if (flashMessages) {
+                flashMessages.style.transition = 'opacity 0.3s';
+                flashMessages.style.opacity = '0';
+                setTimeout(() => flashMessages.remove(), 300);
+            }
+        }, 5000);
+        
+        // Active nav item
+        const currentPath = window.location.pathname;
+        document.querySelectorAll('.nav-item').forEach(item => {
+            if (item.getAttribute('href') === currentPath) {
+                item.classList.add('active');
+            }
+        });
+
+        // Global Search Functionality
+        const globalSearchInput = document.getElementById('globalSearch');
+        const searchSpinner = document.getElementById('searchSpinner');
+        const headerSearchContainer = document.getElementById('headerSearchContainer');
+        const searchSuggestions = document.getElementById('searchSuggestions');
+        const searchSuggestionsHeader = document.getElementById('searchSuggestionsHeader');
+        const searchSuggestionsContent = document.getElementById('searchSuggestionsContent');
+        const searchQueryText = document.getElementById('searchQueryText');
+        const searchResultsCount = document.getElementById('searchResultsCount');
+        const searchViewAll = document.getElementById('searchViewAll');
+        const mobileSearchBtn = document.getElementById('mobileSearchBtn');
+        
+        let searchTimeout;
+        let currentSearchQuery = '';
+        let currentSearchResults = null;
+        let selectedSuggestionIndex = -1;
+        
+        // Global search functionality
+        if (globalSearchInput) {
+            globalSearchInput.addEventListener('input', (e) => {
+                const query = e.target.value.trim();
+                
+                // Clear previous timeout
+                if (searchTimeout) {
+                    clearTimeout(searchTimeout);
+                }
+                
+                // Hide suggestions and spinner if query is too short
+                if (query.length < 2) {
+                    searchSpinner.style.display = 'none';
+                    hideSuggestions();
+                    return;
+                }
+                
+                // Show spinner
+                searchSpinner.style.display = 'block';
+                
+                // Debounce search - 1 second delay as requested
+                searchTimeout = setTimeout(() => {
+                    performSearch(query);
+                }, 1000);
+            });
+            
+            // Handle keyboard navigation
+            globalSearchInput.addEventListener('keydown', (e) => {
+                if (searchSuggestions.style.display === 'block') {
+                    const suggestions = searchSuggestionsContent.querySelectorAll('.suggestion-item');
+                    
+                    if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        selectedSuggestionIndex = Math.min(selectedSuggestionIndex + 1, suggestions.length - 1);
+                        updateSelectedSuggestion(suggestions);
+                    } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        selectedSuggestionIndex = Math.max(selectedSuggestionIndex - 1, -1);
+                        updateSelectedSuggestion(suggestions);
+                    } else if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (selectedSuggestionIndex >= 0 && suggestions[selectedSuggestionIndex]) {
+                            suggestions[selectedSuggestionIndex].click();
+                        } else {
+                            // Navigate to search view all
+                            if (searchViewAll) {
+                                searchViewAll.click();
+                            }
+                        }
+                    } else if (e.key === 'Escape') {
+                        e.preventDefault();
+                        hideSuggestions();
+                        globalSearchInput.blur();
+                    }
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const query = e.target.value.trim();
+                    if (query.length >= 2) {
+                        performSearch(query);
+                    }
+                }
+            });
+            
+            // Handle focus to show suggestions if available
+            globalSearchInput.addEventListener('focus', () => {
+                if (currentSearchResults && globalSearchInput.value.trim().length >= 2) {
+                    showSuggestions();
+                }
+            });
+        }
+        
+        // Perform search function
+        async function performSearch(query) {
+            try {
+                currentSearchQuery = query;
+                searchSpinner.style.display = 'block';
+                
+                const response = await fetch(`/search?q=${encodeURIComponent(query)}`);
+                const data = await response.json();
+                
+                searchSpinner.style.display = 'none';
+                
+                if (!response.ok) {
+                    throw new Error(data.message || 'Search failed');
+                }
+                
+                // Store results and show suggestions
+                currentSearchResults = data;
+                showSearchSuggestions(query, data);
+                
+            } catch (error) {
+                console.error('Search error:', error);
+                searchSpinner.style.display = 'none';
+                showSearchError(error.message);
+            }
+        }
+        
+        // Show search suggestions dropdown
+        function showSearchSuggestions(query, data) {
+            searchQueryText.textContent = `"${query}"`;
+            searchResultsCount.textContent = `${data.total_count} results`;
+            
+            // Clear previous suggestions
+            searchSuggestionsContent.innerHTML = '';
+            selectedSuggestionIndex = -1;
+            
+            if (data.total_count === 0) {
+                searchSuggestionsContent.innerHTML = `
+                    <div class="no-suggestions">
+                        <i class="fas fa-search-minus"></i>
+                        <span>No results found</span>
+                    </div>
+                `;
+            } else {
+                displaySuggestions(data);
+            }
+            
+            // Set up "View All" button
+            if (searchViewAll) {
+                searchViewAll.onclick = () => {
+                    // Create a temporary modal for full results view
+                    showFullSearchModal(query, data);
+                    hideSuggestions();
+                };
+            }
+            
+            showSuggestions();
+        }
+        
+        // Display suggestions in dropdown
+        function displaySuggestions(data) {
+            let html = '';
+            let itemCount = 0;
+            const maxItems = 8; // Limit suggestions for dropdown
+            
+            // Add analysis results (limit 2)
+            if (data.analyses.length > 0 && itemCount < maxItems) {
+                const analyses = data.analyses.slice(0, Math.min(2, maxItems - itemCount));
+                analyses.forEach(analysis => {
+                    html += `
+                        <div class="suggestion-item" onclick="navigateAndScroll('${analysis.url}', '${analysis.scroll_target || ''}')">
+                            <div class="suggestion-icon">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <div class="suggestion-content">
+                                <div class="suggestion-title">${analysis.title}</div>
+                                <div class="suggestion-description">${analysis.description}</div>
+                            </div>
+                            <div class="suggestion-type">Analysis</div>
+                        </div>
+                    `;
+                    itemCount++;
+                });
+            }
+            
+            // Add pepper results (limit 3)
+            if (data.peppers.length > 0 && itemCount < maxItems) {
+                const peppers = data.peppers.slice(0, Math.min(3, maxItems - itemCount));
+                peppers.forEach(pepper => {
+                    const qualityClass = pepper.metadata.quality_category ? pepper.metadata.quality_category.toLowerCase() : 'unknown';
+                    html += `
+                        <div class="suggestion-item" onclick="navigateAndScroll('${pepper.url}', '${pepper.scroll_target || ''}')">
+                            <div class="suggestion-icon">
+                                ${pepper.metadata.crop_url ? 
+                                    `<img src="${pepper.metadata.crop_url}" alt="Pepper" class="suggestion-thumb">` :
+                                    `<i class="fas fa-pepper-hot"></i>`
+                                }
+                            </div>
+                            <div class="suggestion-content">
+                                <div class="suggestion-title">${pepper.title}</div>
+                                <div class="suggestion-description">${pepper.description}</div>
+                            </div>
+                            <div class="suggestion-type quality-${qualityClass}">Pepper</div>
+                        </div>
+                    `;
+                    itemCount++;
+                });
+            }
+            
+            // Add variety results (limit 2)
+            if (data.varieties.length > 0 && itemCount < maxItems) {
+                const varieties = data.varieties.slice(0, Math.min(2, maxItems - itemCount));
+                varieties.forEach(variety => {
+                    html += `
+                        <div class="suggestion-item" onclick="navigateAndScroll('${variety.url}', '${variety.scroll_target || ''}')">
+                            <div class="suggestion-icon" style="background: ${variety.color || '#A1C2BD'};">
+                                <i class="fas fa-leaf"></i>
+                            </div>
+                            <div class="suggestion-content">
+                                <div class="suggestion-title">${variety.title}</div>
+                                <div class="suggestion-description">${variety.description}</div>
+                            </div>
+                            <div class="suggestion-type">Variety</div>
+                        </div>
+                    `;
+                    itemCount++;
+                });
+            }
+            
+            // Add disease results (limit 1)
+            if (data.diseases.length > 0 && itemCount < maxItems) {
+                const diseases = data.diseases.slice(0, Math.min(1, maxItems - itemCount));
+                diseases.forEach(disease => {
+                    html += `
+                        <div class="suggestion-item" onclick="navigateAndScroll('${disease.url}', '${disease.scroll_target || ''}')">
+                            <div class="suggestion-icon disease-icon" style="background: ${disease.metadata.color || '#ef4444'};">
+                                <i class="fas ${disease.metadata.icon || 'fa-virus'}"></i>
+                            </div>
+                            <div class="suggestion-content">
+                                <div class="suggestion-title">${disease.title}</div>
+                                <div class="suggestion-description">${disease.description}</div>
+                            </div>
+                            <div class="suggestion-type">Disease</div>
+                        </div>
+                    `;
+                    itemCount++;
+                });
+            }
+            
+            searchSuggestionsContent.innerHTML = html;
+        }
+        
+        // Show suggestions dropdown
+        function showSuggestions() {
+            searchSuggestions.style.display = 'block';
+            selectedSuggestionIndex = -1;
+        }
+        
+        // Hide suggestions dropdown
+        function hideSuggestions() {
+            searchSuggestions.style.display = 'none';
+            selectedSuggestionIndex = -1;
+        }
+        
+        // Update selected suggestion highlighting
+        function updateSelectedSuggestion(suggestions) {
+            suggestions.forEach((item, index) => {
+                if (index === selectedSuggestionIndex) {
+                    item.classList.add('selected');
+                } else {
+                    item.classList.remove('selected');
+                }
+            });
+        }
+        
+        // Show full search modal (for "View All" functionality)
+        function showFullSearchModal(query, data) {
+            // Create temporary modal elements
+            const modalOverlay = document.createElement('div');
+            modalOverlay.className = 'search-modal';
+            modalOverlay.style.display = 'flex';
+            
+            modalOverlay.innerHTML = `
+                <div class="search-modal-overlay"></div>
+                <div class="search-modal-container">
+                    <div class="search-modal-header">
+                        <div class="search-modal-title">
+                            <i class="fas fa-search"></i>
+                            <span>All Search Results</span>
+                        </div>
+                        <div class="search-modal-query">"${query}"</div>
+                        <button class="search-modal-close">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="search-modal-body">
+                        <div class="search-results" style="display: block;">
+                            <!-- Results will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modalOverlay);
+            document.body.style.overflow = 'hidden';
+            
+            // Populate with full results using existing function
+            const resultsContainer = modalOverlay.querySelector('.search-results');
+            resultsContainer.innerHTML = generateFullSearchResults(data);
+            
+            // Set up close functionality
+            const closeBtn = modalOverlay.querySelector('.search-modal-close');
+            const overlay = modalOverlay.querySelector('.search-modal-overlay');
+            
+            function closeModal() {
+                document.body.removeChild(modalOverlay);
+                document.body.style.overflow = '';
+            }
+            
+            closeBtn.addEventListener('click', closeModal);
+            overlay.addEventListener('click', closeModal);
+            
+            // Keyboard navigation
+            document.addEventListener('keydown', function escapeHandler(e) {
+                if (e.key === 'Escape') {
+                    closeModal();
+                    document.removeEventListener('keydown', escapeHandler);
+                }
+            });
+        }
+        
+        // Generate full search results for modal
+        function generateFullSearchResults(data) {
+            let html = '';
+            
+            // Results summary
+            html += `
+                <div class="search-summary">
+                    <div class="search-summary-text">
+                        ${data.message}
+                    </div>
+                    <div class="search-summary-counts">
+                        ${data.analyses.length > 0 ? `<span class="result-count"><i class="fas fa-chart-line"></i> ${data.analyses.length} analyses</span>` : ''}
+                        ${data.peppers.length > 0 ? `<span class="result-count"><i class="fas fa-pepper-hot"></i> ${data.peppers.length} peppers</span>` : ''}
+                        ${data.varieties.length > 0 ? `<span class="result-count"><i class="fas fa-leaf"></i> ${data.varieties.length} varieties</span>` : ''}
+                        ${data.diseases.length > 0 ? `<span class="result-count"><i class="fas fa-virus"></i> ${data.diseases.length} diseases</span>` : ''}
+                        ${data.users.length > 0 ? `<span class="result-count"><i class="fas fa-users"></i> ${data.users.length} users</span>` : ''}
+                    </div>
+                </div>
+            `;
+            
+            // Analysis Results
+            if (data.analyses.length > 0) {
+                html += `
+                    <div class="search-section">
+                        <div class="search-section-header">
+                            <i class="fas fa-chart-line"></i>
+                            <span>Analysis History</span>
+                            <span class="search-section-count">${data.analyses.length}</span>
+                        </div>
+                        <div class="search-section-results">
+                `;
+                
+                data.analyses.forEach(analysis => {
+                    html += `
+                        <div class="search-result-item" onclick="window.location.href='${analysis.url}'">
+                            <div class="search-result-icon">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <div class="search-result-content">
+                                <div class="search-result-title">${analysis.title}</div>
+                                <div class="search-result-description">${analysis.description}</div>
+                                <div class="search-result-meta">
+                                    <span><i class="fas fa-user"></i> ${analysis.user}</span>
+                                    <span><i class="fas fa-calendar"></i> ${analysis.date}</span>
+                                </div>
+                            </div>
+                            <div class="search-result-action">
+                                <i class="fas fa-external-link-alt"></i>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Pepper Results
+            if (data.peppers.length > 0) {
+                html += `
+                    <div class="search-section">
+                        <div class="search-section-header">
+                            <i class="fas fa-pepper-hot"></i>
+                            <span>Bell Peppers</span>
+                            <span class="search-section-count">${data.peppers.length}</span>
+                        </div>
+                        <div class="search-section-results">
+                `;
+                
+                data.peppers.forEach(pepper => {
+                    const qualityClass = pepper.metadata.quality_category ? pepper.metadata.quality_category.toLowerCase() : 'unknown';
+                    html += `
+                        <div class="search-result-item" onclick="window.location.href='${pepper.url}'">
+                            <div class="search-result-icon">
+                                ${pepper.metadata.crop_url ? 
+                                    `<img src="${pepper.metadata.crop_url}" alt="Pepper crop" class="pepper-crop-thumb">` :
+                                    `<i class="fas fa-pepper-hot"></i>`
+                                }
+                            </div>
+                            <div class="search-result-content">
+                                <div class="search-result-title">${pepper.title}</div>
+                                <div class="search-result-description">${pepper.description}</div>
+                                <div class="search-result-badges">
+                                    <span class="quality-badge quality-${qualityClass}">${pepper.metadata.quality_category}</span>
+                                    <span class="health-badge">${pepper.health}</span>
+                                </div>
+                                <div class="search-result-meta">
+                                    <span><i class="fas fa-percentage"></i> ${Math.round(pepper.metadata.confidence * 100)}% confidence</span>
+                                    <span><i class="fas fa-calendar"></i> ${pepper.date}</span>
+                                </div>
+                            </div>
+                            <div class="search-result-action">
+                                <i class="fas fa-external-link-alt"></i>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Variety Results
+            if (data.varieties.length > 0) {
+                html += `
+                    <div class="search-section">
+                        <div class="search-section-header">
+                            <i class="fas fa-leaf"></i>
+                            <span>Pepper Varieties</span>
+                            <span class="search-section-count">${data.varieties.length}</span>
+                        </div>
+                        <div class="search-section-results">
+                `;
+                
+                data.varieties.forEach(variety => {
+                    html += `
+                        <div class="search-result-item" onclick="window.location.href='${variety.url}'">
+                            <div class="search-result-icon" style="background: ${variety.color || '#A1C2BD'};">
+                                <i class="fas fa-leaf"></i>
+                            </div>
+                            <div class="search-result-content">
+                                <div class="search-result-title">${variety.title}</div>
+                                <div class="search-result-description">${variety.description}</div>
+                                ${variety.metadata.storage ? `<div class="search-result-storage"><i class="fas fa-box"></i> ${variety.metadata.storage}</div>` : ''}
+                                ${variety.date ? `<div class="search-result-meta"><span><i class="fas fa-calendar"></i> ${variety.date}</span></div>` : ''}
+                            </div>
+                            <div class="search-result-action">
+                                <i class="fas fa-external-link-alt"></i>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Disease Results
+            if (data.diseases.length > 0) {
+                html += `
+                    <div class="search-section">
+                        <div class="search-section-header">
+                            <i class="fas fa-virus"></i>
+                            <span>Diseases & Health Issues</span>
+                            <span class="search-section-count">${data.diseases.length}</span>
+                        </div>
+                        <div class="search-section-results">
+                `;
+                
+                data.diseases.forEach(disease => {
+                    const severityClass = disease.severity ? disease.severity.toLowerCase() : 'unknown';
+                    html += `
+                        <div class="search-result-item" onclick="window.location.href='${disease.url}'">
+                            <div class="search-result-icon disease-icon" style="background: ${disease.metadata.color || '#ef4444'};">
+                                <i class="fas ${disease.metadata.icon || 'fa-virus'}"></i>
+                            </div>
+                            <div class="search-result-content">
+                                <div class="search-result-title">${disease.title}</div>
+                                <div class="search-result-description">${disease.description}</div>
+                                <div class="search-result-badges">
+                                    ${disease.severity ? `<span class="severity-badge severity-${severityClass}">${disease.severity}</span>` : ''}
+                                    ${disease.affected_parts ? `<span class="affected-badge">${disease.affected_parts}</span>` : ''}
+                                </div>
+                                ${disease.metadata.scientific_name ? `<div class="search-result-scientific"><em>${disease.metadata.scientific_name}</em></div>` : ''}
+                                ${disease.date ? `<div class="search-result-meta"><span><i class="fas fa-calendar"></i> ${disease.date}</span></div>` : ''}
+                            </div>
+                            <div class="search-result-action">
+                                <i class="fas fa-external-link-alt"></i>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // User Results (Admin only)
+            if (data.users.length > 0) {
+                html += `
+                    <div class="search-section">
+                        <div class="search-section-header">
+                            <i class="fas fa-users"></i>
+                            <span>Users</span>
+                            <span class="search-section-count">${data.users.length}</span>
+                        </div>
+                        <div class="search-section-results">
+                `;
+                
+                data.users.forEach(user => {
+                    html += `
+                        <div class="search-result-item" onclick="window.location.href='${user.url}'">
+                            <div class="search-result-icon">
+                                <div class="user-avatar">
+                                    ${user.title.charAt(0).toUpperCase()}
+                                </div>
+                            </div>
+                            <div class="search-result-content">
+                                <div class="search-result-title">${user.title}</div>
+                                <div class="search-result-description">${user.description}</div>
+                                <div class="search-result-badges">
+                                    <span class="role-badge role-${user.role}">${user.role}</span>
+                                </div>
+                                <div class="search-result-meta">
+                                    <span><i class="fas fa-sign-in-alt"></i> Last login: ${user.last_login}</span>
+                                </div>
+                            </div>
+                            <div class="search-result-action">
+                                <i class="fas fa-external-link-alt"></i>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `
+                        </div>
+                    </div>
+                `;
+            }
+            
+            searchResults.innerHTML = html;
+        }
+        
+        // Show search error
+        function showSearchError(message) {
+            searchQueryText.textContent = `Error: ${message}`;
+            searchResultsCount.textContent = '';
+            
+            searchSuggestionsContent.innerHTML = `
+                <div class="no-suggestions">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Search error: ${message}</span>
+                </div>
+            `;
+            
+            showSuggestions();
+        }
+        
+        // Navigate and scroll function for search results
+        function navigateAndScroll(url, scrollTarget) {
+            // Hide suggestions first
+            hideSuggestions();
+            
+            // Extract the base URL and anchor
+            const [baseUrl, anchor] = url.split('#');
+            
+            // If we're already on the target page, just scroll
+            if (window.location.pathname === baseUrl || (baseUrl === '' && anchor)) {
+                scrollToElement(scrollTarget || anchor);
+            } else {
+                // Store scroll target for after navigation
+                if (scrollTarget || anchor) {
+                    sessionStorage.setItem('scrollTarget', scrollTarget || anchor);
+                }
+                // Navigate to the page
+                window.location.href = url;
+            }
+        }
+        
+        // Scroll to element function
+        function scrollToElement(targetId) {
+            if (!targetId) return;
+            
+            // Try multiple selectors to find the element
+            const selectors = [
+                `#${targetId}`,
+                `[data-id="${targetId}"]`,
+                `[data-analysis-id="${targetId}"]`,
+                `[data-pepper-id="${targetId}"]`,
+                `[data-variety-id="${targetId}"]`,
+                `[data-disease-id="${targetId}"]`,
+                `[data-user-id="${targetId}"]`
+            ];
+            
+            let element = null;
+            for (const selector of selectors) {
+                element = document.querySelector(selector);
+                if (element) break;
+            }
+            
+            if (element) {
+                // Add highlight effect
+                element.classList.add('search-highlight');
+                
+                // Smooth scroll to element
+                element.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center',
+                    inline: 'nearest'
+                });
+                
+                // Remove highlight after animation
+                setTimeout(() => {
+                    element.classList.remove('search-highlight');
+                }, 2000);
+            } else {
+                // Fallback: scroll to top if element not found
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            }
+        }
+        
+        // Handle scroll target after page load
+        window.addEventListener('load', () => {
+            const scrollTarget = sessionStorage.getItem('scrollTarget');
+            if (scrollTarget) {
+                sessionStorage.removeItem('scrollTarget');
+                // Delay scroll to ensure page is fully loaded
+                setTimeout(() => scrollToElement(scrollTarget), 500);
+            }
+        });
+        
+        // Handle hash changes for direct anchor navigation
+        window.addEventListener('hashchange', () => {
+            const hash = window.location.hash.substring(1);
+            if (hash) {
+                setTimeout(() => scrollToElement(hash), 100);
+            }
+        });
+        
+        // Check for hash on initial page load
+        document.addEventListener('DOMContentLoaded', () => {
+            const hash = window.location.hash.substring(1);
+            if (hash) {
+                setTimeout(() => scrollToElement(hash), 300);
+            }
+        });
+        
+        // Click outside to close suggestions
+        document.addEventListener('click', (e) => {
+            if (searchSuggestions && searchSuggestions.style.display === 'block') {
+                if (!headerSearchContainer.contains(e.target)) {
+                    hideSuggestions();
+                }
+            }
+        });
+        
+        // Mobile search functionality
+        const mobileSearchModal = document.getElementById('mobileSearchModal');
+        const mobileSearchOverlay = document.getElementById('mobileSearchOverlay');
+        const mobileSearchInput = document.getElementById('mobileSearchInput');
+        const mobileSearchClose = document.getElementById('mobileSearchClose');
+        const mobileSearchSuggestions = document.getElementById('mobileSearchSuggestions');
+        const mobileSearchSuggestionsContent = document.getElementById('mobileSearchSuggestionsContent');
+        
+        let mobileSearchTimeout;
+        
+        if (mobileSearchBtn && mobileSearchModal) {
+            mobileSearchBtn.addEventListener('click', () => {
+                showMobileSearch();
+            });
+        }
+        
+        // Show mobile search modal
+        function showMobileSearch() {
+            mobileSearchModal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+            
+            // Focus on input after animation
+            setTimeout(() => {
+                mobileSearchInput.focus();
+            }, 300);
+        }
+        
+        // Hide mobile search modal
+        function hideMobileSearch() {
+            mobileSearchModal.style.display = 'none';
+            document.body.style.overflow = '';
+            
+            // Clear input and results
+            mobileSearchInput.value = '';
+            mobileSearchSuggestionsContent.innerHTML = `
+                <div class="mobile-search-placeholder">
+                    <i class="fas fa-search"></i>
+                    <span>Start typing to search...</span>
+                </div>
+            `;
+        }
+        
+        // Mobile search input handling
+        if (mobileSearchInput) {
+            mobileSearchInput.addEventListener('input', (e) => {
+                const query = e.target.value.trim();
+                
+                // Clear previous timeout
+                if (mobileSearchTimeout) {
+                    clearTimeout(mobileSearchTimeout);
+                }
+                
+                // Show placeholder if query is too short
+                if (query.length < 2) {
+                    mobileSearchSuggestionsContent.innerHTML = `
+                        <div class="mobile-search-placeholder">
+                            <i class="fas fa-search"></i>
+                            <span>Start typing to search...</span>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Show loading state
+                mobileSearchSuggestionsContent.innerHTML = `
+                    <div class="mobile-search-placeholder">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <span>Searching...</span>
+                    </div>
+                `;
+                
+                // Debounce search - 1 second delay
+                mobileSearchTimeout = setTimeout(() => {
+                    performMobileSearch(query);
+                }, 1000);
+            });
+        }
+        
+        // Perform mobile search
+        async function performMobileSearch(query) {
+            try {
+                const response = await fetch(`/search?q=${encodeURIComponent(query)}`);
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.message || 'Search failed');
+                }
+                
+                // Display mobile search results
+                displayMobileSearchResults(data);
+                
+            } catch (error) {
+                console.error('Mobile search error:', error);
+                mobileSearchSuggestionsContent.innerHTML = `
+                    <div class="no-suggestions">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>Search error: ${error.message}</span>
+                    </div>
+                `;
+            }
+        }
+        
+        // Display mobile search results
+        function displayMobileSearchResults(data) {
+            if (data.total_count === 0) {
+                mobileSearchSuggestionsContent.innerHTML = `
+                    <div class="no-suggestions">
+                        <i class="fas fa-search-minus"></i>
+                        <span>No results found</span>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Use the same display logic as desktop but in mobile container
+            const html = generateMobileSuggestions(data);
+            mobileSearchSuggestionsContent.innerHTML = html;
+        }
+        
+        // Generate mobile suggestions (similar to desktop but more items)
+        function generateMobileSuggestions(data) {
+            let html = '';
+            let itemCount = 0;
+            const maxItems = 15; // More items for mobile full screen
+            
+            // Add results from all categories
+            const allResults = [
+                ...data.analyses.map(item => ({...item, category: 'Analysis'})),
+                ...data.peppers.map(item => ({...item, category: 'Pepper'})),
+                ...data.varieties.map(item => ({...item, category: 'Variety'})),
+                ...data.diseases.map(item => ({...item, category: 'Disease'})),
+                ...data.users.map(item => ({...item, category: 'User'}))
+            ].slice(0, maxItems);
+            
+            allResults.forEach(item => {
+                if (item.category === 'Analysis') {
+                    html += `
+                        <div class="suggestion-item" onclick="navigateAndScroll('${item.url}', '${item.scroll_target || ''}'); hideMobileSearch();">
+                            <div class="suggestion-icon">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <div class="suggestion-content">
+                                <div class="suggestion-title">${item.title}</div>
+                                <div class="suggestion-description">${item.description}</div>
+                            </div>
+                            <div class="suggestion-type">Analysis</div>
+                        </div>
+                    `;
+                } else if (item.category === 'Pepper') {
+                    const qualityClass = item.metadata?.quality_category ? item.metadata.quality_category.toLowerCase() : 'unknown';
+                    html += `
+                        <div class="suggestion-item" onclick="navigateAndScroll('${item.url}', '${item.scroll_target || ''}'); hideMobileSearch();">
+                            <div class="suggestion-icon">
+                                ${item.metadata?.crop_url ? 
+                                    `<img src="${item.metadata.crop_url}" alt="Pepper" class="suggestion-thumb">` :
+                                    `<i class="fas fa-pepper-hot"></i>`
+                                }
+                            </div>
+                            <div class="suggestion-content">
+                                <div class="suggestion-title">${item.title}</div>
+                                <div class="suggestion-description">${item.description}</div>
+                            </div>
+                            <div class="suggestion-type quality-${qualityClass}">Pepper</div>
+                        </div>
+                    `;
+                } else if (item.category === 'Variety') {
+                    html += `
+                        <div class="suggestion-item" onclick="navigateAndScroll('${item.url}', '${item.scroll_target || ''}'); hideMobileSearch();">
+                            <div class="suggestion-icon" style="background: ${item.color || '#A1C2BD'};">
+                                <i class="fas fa-leaf"></i>
+                            </div>
+                            <div class="suggestion-content">
+                                <div class="suggestion-title">${item.title}</div>
+                                <div class="suggestion-description">${item.description}</div>
+                            </div>
+                            <div class="suggestion-type">Variety</div>
+                        </div>
+                    `;
+                } else if (item.category === 'Disease') {
+                    html += `
+                        <div class="suggestion-item" onclick="navigateAndScroll('${item.url}', '${item.scroll_target || ''}'); hideMobileSearch();">
+                            <div class="suggestion-icon disease-icon" style="background: ${item.metadata?.color || '#ef4444'};">
+                                <i class="fas ${item.metadata?.icon || 'fa-virus'}"></i>
+                            </div>
+                            <div class="suggestion-content">
+                                <div class="suggestion-title">${item.title}</div>
+                                <div class="suggestion-description">${item.description}</div>
+                            </div>
+                            <div class="suggestion-type">Disease</div>
+                        </div>
+                    `;
+                }
+            });
+            
+            return html;
+        }
+        
+        // Mobile search event listeners
+        if (mobileSearchClose) {
+            mobileSearchClose.addEventListener('click', hideMobileSearch);
+        }
+        
+        if (mobileSearchOverlay) {
+            mobileSearchOverlay.addEventListener('click', hideMobileSearch);
+        }
+        
+        // Handle escape key in mobile search
+        document.addEventListener('keydown', (e) => {
+            if (mobileSearchModal && mobileSearchModal.style.display === 'block') {
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    hideMobileSearch();
+                }
+            }
+        });
+        
+        // Update notification count for authenticated users
+        {% if session.get('user_id') %}
+        async function updateNotificationCount() {
+            try {
+                const response = await fetch('/api/user/notifications/unread-count');
+                const data = await response.json();
+                
+                const headerBadge = document.getElementById('headerNotificationBadge');
+                const sidebarBadge = document.getElementById('notificationBadge');
+                
+                if (data.unread_count > 0) {
+                    if (headerBadge) {
+                        headerBadge.textContent = data.unread_count;
+                        headerBadge.style.display = 'inline-block';
+                    }
+                    if (sidebarBadge) {
+                        sidebarBadge.textContent = data.unread_count;
+                        sidebarBadge.style.display = 'inline-block';
+                    }
+                } else {
+                    if (headerBadge) headerBadge.style.display = 'none';
+                    if (sidebarBadge) sidebarBadge.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error updating notification count:', error);
+            }
+        }
+        
+        // Update notification count on page load
+        updateNotificationCount();
+        
+        // Update notification count every 30 seconds
+        setInterval(updateNotificationCount, 30000);
+        {% endif %}
+    </script>
+    
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>
+

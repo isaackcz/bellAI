@@ -1,11 +1,11 @@
 /* Advanced AI Analysis Styling */
 .advanced-analysis-container {
     margin: 1.5rem 0;
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-    border: 1px solid rgba(99, 102, 241, 0.1);
+    background: linear-gradient(135deg, #FFFFFF 0%, #F0F7F5 100%);
+    border: 1px solid rgba(161, 194, 189, 0.15);
     border-radius: 12px;
     padding: 1.5rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 12px rgba(25, 24, 59, 0.06);
 }
 
 .advanced-analysis-header {
@@ -14,15 +14,15 @@
     gap: 0.75rem;
     margin-bottom: 1.5rem;
     padding-bottom: 1rem;
-    border-bottom: 2px solid rgba(99, 102, 241, 0.1);
+    border-bottom: 2px solid rgba(161, 194, 189, 0.15);
 }
 
 .advanced-analysis-header h3 {
     margin: 0;
     font-size: 1.25rem;
     font-weight: 700;
-    color: #374151;
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: var(--dark);
+    background: linear-gradient(135deg, var(--primary), var(--primary-hover));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -30,7 +30,7 @@
 
 .advanced-analysis-header i {
     font-size: 1.5rem;
-    color: #6366f1;
+    color: var(--primary);
     animation: pulse 2s infinite;
 }
 
@@ -59,8 +59,8 @@
 .shelf-life-analysis:hover,
 .market-analysis:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-    border-color: rgba(99, 102, 241, 0.2);
+    box-shadow: 0 8px 20px rgba(25, 24, 59, 0.1);
+    border-color: rgba(161, 194, 189, 0.3);
 }
 
 .analysis-header {
@@ -69,7 +69,7 @@
     gap: 0.5rem;
     margin-bottom: 1rem;
     font-weight: 600;
-    color: #374151;
+    color: var(--dark);
 }
 
 .analysis-header h4 {
@@ -78,7 +78,7 @@
 }
 
 .analysis-header i {
-    color: #6366f1;
+    color: var(--primary);
     font-size: 1.1rem;
 }
 
@@ -129,7 +129,7 @@
 
 .harvest-timing i,
 .days-to-optimal i {
-    color: #8b5cf6;
+    color: var(--primary);
 }
 
 /* Nutrition Analysis */
@@ -151,9 +151,9 @@
     align-items: center;
     text-align: center;
     padding: 0.75rem;
-    background: #f8fafc;
+    background: var(--gray-light);
     border-radius: 8px;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--gray);
 }
 
 .nutrition-label {
@@ -198,15 +198,15 @@
     align-items: center;
     justify-content: space-between;
     padding: 0.75rem;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
+    background: var(--gray-light);
+    border: 1px solid var(--gray);
     border-radius: 8px;
     transition: all 0.2s;
 }
 
 .storage-option:hover {
-    background: #f1f5f9;
-    border-color: #cbd5e1;
+    background: white;
+    border-color: var(--gray-dark);
 }
 
 .storage-option.best {
@@ -227,7 +227,7 @@
 }
 
 .storage-option i {
-    color: #6366f1;
+    color: var(--primary);
     font-size: 1.1rem;
 }
 

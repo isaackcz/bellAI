@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - PepperAI{% endblock %}
+{% block description %}Your PepperAI Dashboard - View statistics and analysis history{% endblock %}
+
+{% block breadcrumb_home %}Dashboard{% endblock %}
+
+{% block content %}
+<div style="max-width: 1400px; margin: 0 auto;">
+    <!-- Page Header -->
+    <div style="margin-bottom: 2rem;">
+        <h1 style="font-size: 2rem; font-weight: 700; color: var(--dark); margin-bottom: 0.5rem;">
+            Welcome back, {{ user.full_name or user.username }}! 👋
+        </h1>
+        <p style="color: var(--secondary); font-size: 1rem;">
+            Here's what's happening with your bell pepper analyses today.
+        </p>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
+        <div class="stat-card" style="background: var(--card-bg); backdrop-filter: blur(20px); border-radius: var(--border-radius); box-shadow: var(--box-shadow); padding: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.2); transition: var(--transition); position: relative; overflow: hidden; cursor: pointer;" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 12px 24px rgba(0,0,0,0.15)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='var(--box-shadow)';">
+            <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--primary), var(--primary-hover));"></div>
+            <div class="stat-icon" style="width: 50px; height: 50px; background: var(--primary-light); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--primary); font-size: 1.5rem; margin-bottom: 1rem;">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="stat-value" style="font-size: 2rem; font-weight: 700; color: var(--dark); margin-bottom: 0.25rem;">
+                {{ total_analyses }}
+            </div>
+            <div class="stat-label" style="color: var(--secondary); font-size: 0.9rem;">
+                Total Analyses
+            </div>
+        </div>
+        
+        <div class="stat-card" style="background: var(--card-bg); backdrop-filter: blur(20px); border-radius: var(--border-radius); box-shadow: var(--box-shadow); padding: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.2); transition: var(--transition); position: relative; overflow: hidden; cursor: pointer;" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 12px 24px rgba(0,0,0,0.15)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='var(--box-shadow)';">
+            <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #10b981, #059669);"></div>
+            <div class="stat-icon" style="width: 50px; height: 50px; background: var(--success-light); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--success); font-size: 1.5rem; margin-bottom: 1rem;">
+                <i class="fas fa-pepper-hot"></i>
+            </div>
+            <div class="stat-value" style="font-size: 2rem; font-weight: 700; color: var(--dark); margin-bottom: 0.25rem;">
+                {{ total_peppers }}
+            </div>
+            <div class="stat-label" style="color: var(--secondary); font-size: 0.9rem;">
+                Bell Peppers Analyzed
+            </div>
+        </div>
+        
+        <div class="stat-card" style="background: var(--card-bg); backdrop-filter: blur(20px); border-radius: var(--border-radius); box-shadow: var(--box-shadow); padding: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.2); transition: var(--transition); position: relative; overflow: hidden; cursor: pointer;" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 12px 24px rgba(0,0,0,0.15)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='var(--box-shadow)';">
+            <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #f59e0b, #d97706);"></div>
+            <div class="stat-icon" style="width: 50px; height: 50px; background: var(--warning-light); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--warning); font-size: 1.5rem; margin-bottom: 1rem;">
+                <i class="fas fa-star"></i>
+            </div>
+            <div class="stat-value" style="font-size: 2rem; font-weight: 700; color: var(--dark); margin-bottom: 0.25rem;">
+                {{ avg_quality }}%
+            </div>
+            <div class="stat-label" style="color: var(--secondary); font-size: 0.9rem;">
+                Average Quality Score
+            </div>
+        </div>
+        
+        <div class="stat-card" style="background: var(--card-bg); backdrop-filter: blur(20px); border-radius: var(--border-radius); box-shadow: var(--box-shadow); padding: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.2); transition: var(--transition); position: relative; overflow: hidden; cursor: pointer;" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 12px 24px rgba(0,0,0,0.15)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='var(--box-shadow)';">
+            <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--primary), var(--primary-hover));"></div>
+            <div class="stat-icon" style="width: 50px; height: 50px; background: var(--primary-light); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--primary); font-size: 1.5rem; margin-bottom: 1rem;">
+                <i class="fas fa-user-check"></i>
+            </div>
+            <div class="stat-value" style="font-size: 2rem; font-weight: 700; color: var(--dark); margin-bottom: 0.25rem;">
+                Active
+            </div>
+            <div class="stat-label" style="color: var(--secondary); font-size: 0.9rem;">
+                Account Status
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 3rem;">
+        <a href="{{ url_for('analyze') }}" style="display: flex; align-items: center; gap: 1rem; padding: 1.25rem; background: linear-gradient(135deg, var(--primary), var(--primary-hover)); color: var(--dark); border-radius: var(--border-radius-sm); text-decoration: none; box-shadow: var(--box-shadow); transition: var(--transition); font-weight: 600;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 16px rgba(161, 194, 189, 0.3)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='var(--box-shadow)';">
+            <i class="fas fa-camera" style="font-size: 1.5rem;"></i>
+            <div>
+                <div style="font-weight: 600; font-size: 1rem;">New Analysis</div>
+                <div style="font-size: 0.85rem; opacity: 0.9;">Start analyzing</div>
+            </div>
+        </a>
+        
+        <a href="{{ url_for('history.history') }}" style="display: flex; align-items: center; gap: 1rem; padding: 1.25rem; background: var(--card-bg); border: 2px solid var(--gray); color: var(--dark); border-radius: var(--border-radius-sm); text-decoration: none; transition: var(--transition);" onmouseover="this.style.transform='translateY(-2px)'; this.style.borderColor='var(--primary)';" onmouseout="this.style.transform='translateY(0)'; this.style.borderColor='var(--gray)';">
+            <i class="fas fa-history" style="font-size: 1.5rem; color: var(--primary);"></i>
+            <div>
+                <div style="font-weight: 600; font-size: 1rem;">View History</div>
+                <div style="font-size: 0.85rem; color: var(--secondary);">Past analyses</div>
+            </div>
+        </a>
+        
+        <a href="{{ url_for('statistics.statistics') }}" style="display: flex; align-items: center; gap: 1rem; padding: 1.25rem; background: var(--card-bg); border: 2px solid var(--gray); color: var(--dark); border-radius: var(--border-radius-sm); text-decoration: none; transition: var(--transition);" onmouseover="this.style.transform='translateY(-2px)'; this.style.borderColor='var(--primary)';" onmouseout="this.style.transform='translateY(0)'; this.style.borderColor='var(--gray)';">
+            <i class="fas fa-chart-line" style="font-size: 1.5rem; color: var(--primary);"></i>
+            <div>
+                <div style="font-weight: 600; font-size: 1rem;">Statistics</div>
+                <div style="font-size: 0.85rem; color: var(--secondary);">Detailed insights</div>
+            </div>
+        </a>
+        
+        <a href="{{ url_for('export.export_page') }}" style="display: flex; align-items: center; gap: 1rem; padding: 1.25rem; background: var(--card-bg); border: 2px solid var(--gray); color: var(--dark); border-radius: var(--border-radius-sm); text-decoration: none; transition: var(--transition);" onmouseover="this.style.transform='translateY(-2px)'; this.style.borderColor='var(--success)';" onmouseout="this.style.transform='translateY(0)'; this.style.borderColor='var(--gray)';">
+            <i class="fas fa-download" style="font-size: 1.5rem; color: var(--success);"></i>
+            <div>
+                <div style="font-weight: 600; font-size: 1rem;">Export Data</div>
+                <div style="font-size: 0.85rem; color: var(--secondary);">CSV, JSON & more</div>
+            </div>
+        </a>
+    </div>
+
+    <!-- Data Visualizations -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
+        <!-- Quality Distribution -->
+        <div class="chart-card" style="background: var(--card-bg); backdrop-filter: blur(20px); border-radius: var(--border-radius); box-shadow: var(--box-shadow); padding: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.2);">
+            <h3 style="font-size: 1.125rem; font-weight: 600; color: var(--dark); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                <i class="fas fa-chart-pie" style="color: var(--primary);"></i>
+                Quality Distribution
+            </h3>
+            {% if excellent_count + good_count + fair_count + poor_count > 0 %}
+                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                    <!-- Excellent -->
+                    <div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span style="color: var(--dark); font-weight: 500;">Excellent (80-100)</span>
+                            <span style="color: var(--success); font-weight: 600;">{{ excellent_count }}</span>
+                        </div>
+                        <div style="height: 8px; background: var(--gray); border-radius: 50px; overflow: hidden;">
+                            <div style="height: 100%; background: var(--success); border-radius: 50px; width: {{ (excellent_count / (excellent_count + good_count + fair_count + poor_count) * 100) }}%; transition: width 0.5s ease;"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Good -->
+                    <div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span style="color: var(--dark); font-weight: 500;">Good (60-79)</span>
+                            <span style="color: var(--info); font-weight: 600;">{{ good_count }}</span>
+                        </div>
+                        <div style="height: 8px; background: var(--gray); border-radius: 50px; overflow: hidden;">
+                            <div style="height: 100%; background: var(--info); border-radius: 50px; width: {{ (good_count / (excellent_count + good_count + fair_count + poor_count) * 100) }}%; transition: width 0.5s ease;"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Fair -->
+                    <div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span style="color: var(--dark); font-weight: 500;">Fair (40-59)</span>
+                            <span style="color: var(--warning); font-weight: 600;">{{ fair_count }}</span>
+                        </div>
+                        <div style="height: 8px; background: var(--gray); border-radius: 50px; overflow: hidden;">
+                            <div style="height: 100%; background: var(--warning); border-radius: 50px; width: {{ (fair_count / (excellent_count + good_count + fair_count + poor_count) * 100) }}%; transition: width 0.5s ease;"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Poor -->
+                    <div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span style="color: var(--dark); font-weight: 500;">Poor (0-39)</span>
+                            <span style="color: var(--danger); font-weight: 600;">{{ poor_count }}</span>
+                        </div>
+                        <div style="height: 8px; background: var(--gray); border-radius: 50px; overflow: hidden;">
+                            <div style="height: 100%; background: var(--danger); border-radius: 50px; width: {{ (poor_count / (excellent_count + good_count + fair_count + poor_count) * 100) }}%; transition: width 0.5s ease;"></div>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div style="text-align: center; padding: 2rem; color: var(--secondary);">
+                    <i class="fas fa-chart-pie" style="font-size: 3rem; opacity: 0.3; margin-bottom: 1rem;"></i>
+                    <p>No quality data available yet</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Variety Distribution -->
+        <div class="chart-card" style="background: var(--card-bg); backdrop-filter: blur(20px); border-radius: var(--border-radius); box-shadow: var(--box-shadow); padding: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.2);">
+            <h3 style="font-size: 1.125rem; font-weight: 600; color: var(--dark); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                <i class="fas fa-pepper-hot" style="color: var(--primary);"></i>
+                Top Varieties
+            </h3>
+            {% if variety_stats %}
+                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                    {% for variety, count in variety_stats %}
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; background: rgba(255, 255, 255, 0.5); border-radius: var(--border-radius-sm);">
+                            <span style="color: var(--dark); font-weight: 500;">{{ variety }}</span>
+                            <span style="padding: 0.25rem 0.75rem; background: var(--primary-light); color: var(--primary); border-radius: 50px; font-weight: 600; font-size: 0.875rem;">{{ count }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div style="text-align: center; padding: 2rem; color: var(--secondary);">
+                    <i class="fas fa-pepper-hot" style="font-size: 3rem; opacity: 0.3; margin-bottom: 1rem;"></i>
+                    <p>No variety data available yet</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Activity Chart (Last 7 Days) -->
+        <div class="chart-card" style="background: var(--card-bg); backdrop-filter: blur(20px); border-radius: var(--border-radius); box-shadow: var(--box-shadow); padding: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.2);">
+            <h3 style="font-size: 1.125rem; font-weight: 600; color: var(--dark); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                <i class="fas fa-chart-bar" style="color: var(--primary);"></i>
+                Activity (Last 7 Days)
+            </h3>
+            {% if activity_data %}
+                <div style="display: flex; align-items: end; justify-content: space-between; height: 150px; gap: 0.5rem;">
+                    {% set max_count = activity_data|map(attribute='count')|max %}
+                    {% if max_count == 0 %}{% set max_count = 1 %}{% endif %}
+                    {% for day in activity_data %}
+                        <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
+                            <div style="width: 100%; background: linear-gradient(180deg, var(--primary), var(--info)); border-radius: 4px 4px 0 0; transition: all 0.3s ease; height: {{ (day.count / max_count * 100) if day.count > 0 else 2 }}%;" title="{{ day.date }}: {{ day.count }} analysis"></div>
+                            <span style="font-size: 0.7rem; color: var(--secondary); font-weight: 500;">{{ day.date[-2:] }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+                <div style="text-align: center; margin-top: 1rem; font-size: 0.875rem; color: var(--secondary);">
+                    <i class="fas fa-info-circle"></i> Daily analysis count
+                </div>
+            {% else %}
+                <div style="text-align: center; padding: 2rem; color: var(--secondary);">
+                    <i class="fas fa-chart-bar" style="font-size: 3rem; opacity: 0.3; margin-bottom: 1rem;"></i>
+                    <p>No activity data available yet</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Recent Analyses -->
+    <div id="history" class="recent-section" style="background: var(--card-bg); backdrop-filter: blur(20px); border-radius: var(--border-radius); box-shadow: var(--box-shadow); padding: 2rem; border: 1px solid rgba(255, 255, 255, 0.2);">
+        <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <h2 style="font-size: 1.5rem; font-weight: 600; color: var(--dark); display: flex; align-items: center; gap: 0.5rem; margin: 0;">
+                <i class="fas fa-history" style="color: var(--primary);"></i>
+                Recent Analyses
+            </h2>
+            <a href="{{ url_for('history.history') }}" style="color: var(--primary); font-size: 0.875rem; text-decoration: none; display: flex; align-items: center; gap: 0.25rem; font-weight: 500;">
+                View All <i class="fas fa-arrow-right" style="font-size: 0.75rem;"></i>
+            </a>
+        </div>
+
+        {% if recent_analyses %}
+            <div class="analysis-list" style="display: flex; flex-direction: column; gap: 1rem;">
+                {% for analysis in recent_analyses %}
+                    <div id="analysis-{{ analysis.id }}" style="display: flex; align-items: center; justify-content: space-between; padding: 1.25rem; background: rgba(255, 255, 255, 0.5); border-radius: var(--border-radius-sm); transition: var(--transition); border: 1px solid rgba(0, 0, 0, 0.04); cursor: pointer;" onmouseover="this.style.background='rgba(255, 255, 255, 0.8)'; this.style.transform='translateX(4px)'; this.style.borderColor='rgba(161, 194, 189, 0.3)';" onmouseout="this.style.background='rgba(255, 255, 255, 0.5)'; this.style.transform='translateX(0)'; this.style.borderColor='rgba(0, 0, 0, 0.04)';">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <div style="width: 50px; height: 50px; background: var(--success-light); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--success); font-size: 1.2rem;">
+                                <i class="fas fa-pepper-hot"></i>
+                            </div>
+                            <div>
+                                <div style="font-weight: 600; color: var(--dark); margin-bottom: 0.25rem;">
+                                    {{ analysis.peppers_found }} Bell Pepper{{ 's' if analysis.peppers_found != 1 else '' }} Detected
+                                </div>
+                                <div style="font-size: 0.85rem; color: var(--secondary);">
+                                    <i class="fas fa-clock"></i>
+                                    {{ analysis.created_at.strftime('%B %d, %Y at %I:%M %p') }}
+                                </div>
+                            </div>
+                        </div>
+                        <div style="padding: 0.5rem 1rem; border-radius: 50px; font-size: 0.85rem; font-weight: 600; {% if analysis.avg_quality >= 80 %}background: var(--success-light); color: var(--success);{% elif analysis.avg_quality >= 60 %}background: var(--info-light); color: var(--info);{% elif analysis.avg_quality >= 40 %}background: var(--warning-light); color: var(--warning);{% else %}background: var(--danger-light); color: var(--danger);{% endif %}">
+                            {{ analysis.avg_quality|round|int }}% Quality
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div style="text-align: center; padding: 3rem 1rem; color: var(--secondary);">
+                <i class="fas fa-seedling" style="font-size: 4rem; color: var(--gray); opacity: 0.5; margin-bottom: 1rem;"></i>
+                <h3 style="color: var(--dark); margin-bottom: 0.5rem;">No Analyses Yet</h3>
+                <p>Start analyzing bell peppers to see your history here</p>
+                <a href="{{ url_for('analyze') }}" class="btn btn-primary" style="margin-top: 1rem; display: inline-flex;">
+                    <i class="fas fa-camera"></i> Start Your First Analysis
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
