@@ -1,36 +1,106 @@
 # PepperAI - Bell Pepper Detection & Quality Assessment System
-# Docker Compose configuration for easy deployment
+# Docker Compose configuration for production deployment
 
 version: '3.8'
 
 services:
+  # Main PepperAI Application
   pepperai:
-    build: .
+    build: 
+      context: .
+      dockerfile: Dockerfile
     container_name: pepperai-app
-    ports:
-      - "5000:5000"
-    volumes:
-      - ./uploads:/app/uploads
-      - ./results:/app/results
     environment:
       - FLASK_ENV=production
       - PYTHONUNBUFFERED=1
+      - DATABASE_URL=sqlite:///instance/pepperai.db
+      - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-in-production}
+      - MAX_CONTENT_LENGTH=16777216
+    volumes:
+      - pepperai_uploads:/app/uploads
+      - pepperai_results:/app/results
+      - pepperai_instance:/app/instance
+    networks:
+      - pepperai-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/"]
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+    depends_on:
+      - redis
 
-  # Optional: Add Redis for caching (uncomment if needed)
-  # redis:
-  #   image: redis:alpine
-  #   container_name: pepperai-redis
-  #   ports:
-  #     - "6379:6379"
-  #   restart: unless-stopped
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: pepperai-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - pepperai_uploads:/var/www/uploads:ro
+      - pepperai_results:/var/www/results:ro
+    networks:
+      - pepperai-network
+    restart: unless-stopped
+    depends_on:
+      - pepperai
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis for caching and session storage
+  redis:
+    image: redis:7-alpine
+    container_name: pepperai-redis
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - pepperai_redis:/data
+    networks:
+      - pepperai-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Optional: Database backup service
+  backup:
+    image: alpine:latest
+    container_name: pepperai-backup
+    volumes:
+      - pepperai_instance:/backup/instance:ro
+      - ./backups:/backups
+    command: |
+      sh -c "
+        while true; do
+          timestamp=$$(date +%Y%m%d_%H%M%S)
+          cp /backup/instance/pepperai.db /backups/pepperai_backup_$$timestamp.db
+          find /backups -name 'pepperai_backup_*.db' -mtime +7 -delete
+          sleep 86400
+        done
+      "
+    networks:
+      - pepperai-network
+    restart: unless-stopped
+
+volumes:
+  pepperai_uploads:
+    driver: local
+  pepperai_results:
+    driver: local
+  pepperai_instance:
+    driver: local
+  pepperai_redis:
+    driver: local
 
 networks:
-  default:
-    name: pepperai-network
+  pepperai-network:
+    driver: bridge

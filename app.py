@@ -619,6 +619,48 @@ def landing():
         return redirect(url_for('dashboard'))
     return redirect(url_for('login'))
 
+@app.route('/health')
+def health_check():
+    """Health check endpoint for Docker and load balancers"""
+    try:
+        # Check if database is accessible
+        db.session.execute('SELECT 1')
+        
+        # Check if models are loaded
+        models_status = {
+            'general_detection': MODELS['general_detection'] is not None,
+            'bell_pepper_detection': MODELS['bell_pepper_detection'] is not None,
+            'cv_quality_analyzer': MODELS['cv_quality_analyzer'] is not None,
+            'advanced_ai_analyzer': MODELS['advanced_ai_analyzer'] is not None,
+            'health_analyzer': MODELS['health_analyzer'] is not None
+        }
+        
+        # Check if required directories exist
+        import os
+        dirs_exist = {
+            'uploads': os.path.exists(app.config['UPLOAD_FOLDER']),
+            'results': os.path.exists(app.config['RESULTS_FOLDER']),
+            'instance': os.path.exists('instance')
+        }
+        
+        health_status = {
+            'status': 'healthy',
+            'timestamp': datetime.utcnow().isoformat(),
+            'database': 'connected',
+            'models': models_status,
+            'directories': dirs_exist,
+            'version': '1.0.0'
+        }
+        
+        return jsonify(health_status), 200
+        
+    except Exception as e:
+        return jsonify({
+            'status': 'unhealthy',
+            'timestamp': datetime.utcnow().isoformat(),
+            'error': str(e)
+        }), 503
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if 'user_id' in session:
