@@ -188,6 +188,25 @@
             imageContainer.classList.remove('fade-in');
         }
         
+        function resetUploadPreview() {
+            const fileLabel = document.querySelector('.file-label');
+            const uploadIcon = fileLabel.querySelector('.upload-icon');
+            const uploadText = fileLabel.querySelector('.upload-text');
+            const existingPreview = fileLabel.querySelector('img');
+            
+            // Remove existing preview image
+            if (existingPreview) {
+                existingPreview.remove();
+            }
+            
+            // Restore original content
+            uploadIcon.style.display = 'block';
+            uploadText.innerHTML = `
+                <span class="upload-main">Choose a file or drag it here</span>
+                <small class="upload-sub">Supported formats: JPG, PNG, GIF, WebP</small>
+            `;
+        }
+        
         function displayGeneralObjects(objects) {
             if (!objects || objects.length === 0) {
                 generalSection.style.display = 'none';
@@ -426,8 +445,8 @@
                                     <span class="grade-description">${market.grade_description}</span>
                                 </div>
                                 <div class="market-price">
-                                    <i class="fas fa-dollar-sign"></i>
-                                    <span>$${market.estimated_price_per_kg}/kg</span>
+                                    <i class="fas fa-peso-sign"></i>
+                                    <span>₱${market.estimated_price_per_kg}/kg</span>
                                 </div>
                             </div>
                         </div>
@@ -599,6 +618,31 @@
             uploadBtn.disabled = !fileInput.files[0];
             if (fileInput.files[0]) {
                 updateStatus('File selected: ' + fileInput.files[0].name, 'success');
+                
+                // Show preview of selected image in the upload area
+                const file = fileInput.files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const fileLabel = document.querySelector('.file-label');
+                    const uploadIcon = fileLabel.querySelector('.upload-icon');
+                    const uploadText = fileLabel.querySelector('.upload-text');
+                    
+                    // Create preview image
+                    const previewImg = document.createElement('img');
+                    previewImg.src = e.target.result;
+                    previewImg.style.cssText = 'max-width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px; margin-bottom: 10px;';
+                    
+                    // Hide original content and show preview
+                    uploadIcon.style.display = 'none';
+                    uploadText.innerHTML = `
+                        <span class="upload-main">${file.name}</span>
+                        <small class="upload-sub">Click to change image</small>
+                    `;
+                    
+                    // Insert preview image
+                    fileLabel.insertBefore(previewImg, uploadText);
+                };
+                reader.readAsDataURL(file);
             }
         });
 
@@ -612,6 +656,10 @@
             try {
                 setButtonLoading(uploadBtn, true);
                 addVisualFeedback(uploadBtn, 'success');
+                
+                // Reset upload preview when analysis starts
+                resetUploadPreview();
+                
                 await uploadFile(file);
                 setButtonLoading(uploadBtn, false);
             } catch (err) {
@@ -881,6 +929,16 @@
                 }
                 
                 updateStatus(statusMessage, 'success');
+                
+                // Auto-scroll to Bell Pepper Detection section if peppers were found
+                if (data.bell_peppers && data.bell_peppers.length > 0) {
+                    setTimeout(() => {
+                        const pepperSection = document.getElementById('pepperSection');
+                        if (pepperSection) {
+                            pepperSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                    }, 100);
+                }
                 
                 // Hide progress bar after short delay
                 setTimeout(() => hideProgressBar(), 500);

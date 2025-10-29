@@ -10,6 +10,10 @@ import torch
 from python_modules.pepper_quality_analyzer import BellPepperQualityAnalyzer
 from python_modules.advanced_ai_analyzer import AdvancedPepperAnalyzer
 
+# Load environment variables from .env file (for local development)
+from dotenv import load_dotenv
+load_dotenv()
+
 # Import models from separate file
 from models import db, User, AnalysisHistory, BellPepperDetection, PepperVariety, PepperDisease, PepperType, Notification, NotificationAttachment, NotificationRead
 
@@ -26,15 +30,55 @@ except ImportError as e:
 
 app = Flask(__name__)
 
-# Configuration
-app.config['SECRET_KEY'] = 'your-secret-key-change-in-production'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///pepperai.db'
+# Resolve absolute base paths to avoid SQLite path issues
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+INSTANCE_DIR = os.path.join(BASE_DIR, 'instance')
+DEFAULT_DB_PATH = os.path.join(INSTANCE_DIR, 'pepperai.db')
+
+# Ensure instance directory exists before DB init
+os.makedirs(INSTANCE_DIR, exist_ok=True)
+
+# Configuration from environment variables with safe absolute fallbacks
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
+
+# Resolve DATABASE_URL, forcing sqlite paths to absolute if provided relative
+env_db_url = os.getenv('DATABASE_URL')
+if env_db_url and env_db_url.startswith('sqlite:///'):
+    _path = env_db_url.replace('sqlite:///', '', 1)
+    if not os.path.isabs(_path):
+        _path = os.path.join(BASE_DIR, _path)
+    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{_path}'
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = env_db_url or f'sqlite:///{DEFAULT_DB_PATH}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
-app.config['UPLOAD_FOLDER'] = 'uploads'
-app.config['RESULTS_FOLDER'] = 'results'
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+_upload_env = os.getenv('UPLOAD_FOLDER', os.path.join(BASE_DIR, 'uploads'))
+_results_env = os.getenv('RESULTS_FOLDER', os.path.join(BASE_DIR, 'results'))
+app.config['UPLOAD_FOLDER'] = _upload_env if os.path.isabs(_upload_env) else os.path.join(BASE_DIR, _upload_env)
+app.config['RESULTS_FOLDER'] = _results_env if os.path.isabs(_results_env) else os.path.join(BASE_DIR, _results_env)
+app.config['MAX_CONTENT_LENGTH'] = int(os.getenv('MAX_CONTENT_LENGTH', 16777216))  # 16MB default
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'bmp'}
+
+# Redis configuration (for Docker environment)
+app.config['REDIS_URL'] = os.getenv('REDIS_URL', None)
+
+# Flask environment settings
+app.config['ENV'] = os.getenv('FLASK_ENV', 'development')
+app.config['DEBUG'] = os.getenv('FLASK_DEBUG', '0') == '1'
+
+# Print configuration info on startup (hide sensitive data)
+print("\n" + "="*60)
+print("🔧 PepperAI Configuration Loaded")
+print("="*60)
+print(f"📍 Environment: {app.config['ENV']}")
+print(f"🐛 Debug Mode: {app.config['DEBUG']}")
+print(f"🗄️  Database: {app.config['SQLALCHEMY_DATABASE_URI']}")
+print(f"📁 Upload Folder: {app.config['UPLOAD_FOLDER']}")
+print(f"📊 Results Folder: {app.config['RESULTS_FOLDER']}")
+print(f"📦 Max Upload Size: {app.config['MAX_CONTENT_LENGTH'] / (1024*1024):.1f}MB")
+print(f"🔴 Redis: {app.config['REDIS_URL'] if app.config['REDIS_URL'] else 'Not configured'}")
+print(f"🔑 Secret Key: {'Set (secured)' if app.config['SECRET_KEY'] != 'dev-secret-key-change-in-production' else '⚠️  Using default (INSECURE!)'}")
+print("="*60 + "\n")
 
 # Initialize database with app
 db.init_app(app)
@@ -42,6 +86,7 @@ db.init_app(app)
 # Create directories if they don't exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['RESULTS_FOLDER'], exist_ok=True)
+os.makedirs('instance', exist_ok=True)
 
 # Register blueprints
 from routes import history_bp, statistics_bp, export_bp, pepper_database_bp, notifications_bp
@@ -1565,4 +1610,5 @@ def search():
         return jsonify({'error': 'Search failed', 'message': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    debug_flag = os.getenv('FLASK_DEBUG', '0') == '1'
+    app.run(host='0.0.0.0', port=5000, debug=debug_flag)

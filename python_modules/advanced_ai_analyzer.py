@@ -404,9 +404,9 @@ class AdvancedPepperAnalyzer:
     
     def _analyze_market_value(self, quality_metrics: Dict, variety_info: Dict, ripeness_analysis: Dict) -> Dict:
         """
-        Analyze market value and pricing
+        Analyze market value and pricing based on Philippine market
         """
-        base_price_per_kg = 4.50  # USD base price
+        base_price_per_kg = 180.0  # PHP base price (mid-range retail price)
         
         # Quality multiplier
         quality_multiplier = quality_metrics.get('overall_quality', 50) / 100
@@ -498,33 +498,37 @@ class AdvancedPepperAnalyzer:
     
     def _get_market_recommendations(self, grade: str, price: float) -> List[str]:
         """
-        Get market-specific recommendations
+        Get market-specific recommendations for Philippine market
         """
         recommendations = []
         
         if grade == 'Premium':
             recommendations.extend([
-                "Target premium retailers and restaurants",
-                "Consider organic certification",
-                "Suitable for export markets"
+                "Target high-end supermarkets (SM, Robinsons, Puregold)",
+                "Suitable for export to Singapore, Hong Kong",
+                "Perfect for premium restaurants and hotels",
+                "Consider organic certification for higher margins"
             ])
         elif grade == 'Grade A':
             recommendations.extend([
-                "Perfect for supermarket chains",
-                "Good for fresh market sales",
-                "Consider value-added packaging"
+                "Ideal for major supermarket chains",
+                "Good for wet markets and palengke",
+                "Suitable for food service industry",
+                "Consider vacuum packaging for longer shelf life"
             ])
         elif grade == 'Grade B':
             recommendations.extend([
-                "Suitable for food processing",
-                "Good for wholesale markets",
-                "Consider bulk sales"
+                "Perfect for food processing companies",
+                "Good for wholesale markets (Divisoria, etc.)",
+                "Suitable for sari-sari stores",
+                "Consider bulk sales to restaurants"
             ])
         else:
             recommendations.extend([
-                "Focus on processing markets",
-                "Consider value-added products",
-                "Bulk commodity sales"
+                "Focus on processing markets (sauces, pickles)",
+                "Suitable for local food manufacturers",
+                "Good for institutional buyers (schools, hospitals)",
+                "Consider value-added products (dried, powdered)"
             ])
         
         return recommendations
@@ -585,7 +589,7 @@ class AdvancedPepperAnalyzer:
                 'confidence': 50
             },
             'market_analysis': {
-                'estimated_price_per_kg': 4.50,
+                'estimated_price_per_kg': 180.0,
                 'grade': 'Grade B'
             },
             'advanced_recommendations': ['Unable to provide detailed analysis']

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PepperAI</title>
+    <style>
+        html, body { height: 100%; margin: 0; }
+        body { display: flex; align-items: center; justify-content: center; font-family: Arial, sans-serif; }
+        .container { text-align: center; padding: 16px; }
+        a { color: #1e88e5; text-decoration: none; }
+    </style>
+    <script>
+        // Prevent infinite redirect loop - only redirect if not already on Flask app
+        (function(){
+            // Check if we're already on a Flask route (not index.html)
+            var currentPath = window.location.pathname;
+            if (currentPath === '/' || currentPath === '/index.html') {
+                // If Flask app is hosted elsewhere, replace with your external URL:
+                // window.location.replace('https://YOUR_FLASK_APP_URL/');
+                
+                // If Flask app is on same domain, redirect to login:
+                window.location.replace('/login');
+            }
+        })();
+    </script>
+</head>
+<body>
+    <div class="container">
+        <p>Redirecting to PepperAI… If you are not redirected, <a href="/login">click here</a>.</p>
+    </div>
+</body>
+</html>
+
+

@@ -1,8 +1,6 @@
 # PepperAI - Bell Pepper Detection & Quality Assessment System
 # Docker Compose configuration for production deployment
 
-version: '3.8'
-
 services:
   # Main PepperAI Application
   pepperai:
@@ -10,12 +8,19 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: pepperai-app
+    env_file:
+      - .env
     environment:
-      - FLASK_ENV=production
-      - PYTHONUNBUFFERED=1
-      - DATABASE_URL=sqlite:///instance/pepperai.db
+      - FLASK_ENV=${FLASK_ENV:-production}
+      - FLASK_DEBUG=${FLASK_DEBUG:-0}
+      - PYTHONUNBUFFERED=${PYTHONUNBUFFERED:-1}
+      - PYTHONDONTWRITEBYTECODE=${PYTHONDONTWRITEBYTECODE:-1}
+      - DATABASE_URL=${DATABASE_URL:-sqlite:///instance/pepperai.db}
       - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-in-production}
-      - MAX_CONTENT_LENGTH=16777216
+      - MAX_CONTENT_LENGTH=${MAX_CONTENT_LENGTH:-16777216}
+      - UPLOAD_FOLDER=${UPLOAD_FOLDER:-uploads}
+      - RESULTS_FOLDER=${RESULTS_FOLDER:-results}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
     volumes:
       - pepperai_uploads:/app/uploads
       - pepperai_results:/app/results
