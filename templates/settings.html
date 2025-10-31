@@ -319,6 +319,37 @@
             flex-wrap: wrap;
         }
     }
+
+    /* Mobile: turn table into stacked cards */
+    @media (max-width: 640px) {
+        .users-table thead {
+            display: none;
+        }
+        .users-table tr {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0.5rem;
+            padding: 0.75rem;
+            border: 1px solid var(--gray-light);
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            background: white;
+        }
+        .users-table td {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: none;
+            padding: 0.25rem 0;
+        }
+        .users-table td[data-label]::before {
+            content: attr(data-label);
+            color: var(--secondary);
+            font-weight: 600;
+            margin-right: 1rem;
+        }
+        .user-actions { width: 100%; justify-content: flex-start; }
+    }
 </style>
 {% endblock %}
 
@@ -335,8 +366,9 @@
     </div>
 
     <!-- System Statistics -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
-        <div style="background: var(--card-bg); backdrop-filter: blur(20px); border-radius: var(--border-radius); box-shadow: var(--box-shadow); padding: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.2); transition: var(--transition); position: relative; overflow: hidden;">
+    <div class="row" style="margin-bottom: 3rem;">
+        <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
+            <div style="background: var(--card-bg); backdrop-filter: blur(20px); border-radius: var(--border-radius); box-shadow: var(--box-shadow); padding: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.2); transition: var(--transition); position: relative; overflow: hidden;">
             <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--primary), var(--primary-hover));"></div>
             <div style="width: 50px; height: 50px; background: var(--primary-light); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--primary); font-size: 1.5rem; margin-bottom: 1rem;">
                 <i class="fas fa-users"></i>
@@ -347,9 +379,11 @@
             <div style="color: var(--secondary); font-size: 0.9rem;">
                 Total Users
             </div>
+            </div>
         </div>
         
-        <div style="background: var(--card-bg); backdrop-filter: blur(20px); border-radius: var(--border-radius); box-shadow: var(--box-shadow); padding: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.2); transition: var(--transition); position: relative; overflow: hidden;">
+        <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
+            <div style="background: var(--card-bg); backdrop-filter: blur(20px); border-radius: var(--border-radius); box-shadow: var(--box-shadow); padding: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.2); transition: var(--transition); position: relative; overflow: hidden;">
             <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #10b981, #059669);"></div>
             <div style="width: 50px; height: 50px; background: var(--success-light); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--success); font-size: 1.5rem; margin-bottom: 1rem;">
                 <i class="fas fa-user-shield"></i>
@@ -360,9 +394,11 @@
             <div style="color: var(--secondary); font-size: 0.9rem;">
                 Administrators
             </div>
+            </div>
         </div>
         
-        <div style="background: var(--card-bg); backdrop-filter: blur(20px); border-radius: var(--border-radius); box-shadow: var(--box-shadow); padding: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.2); transition: var(--transition); position: relative; overflow: hidden;">
+        <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
+            <div style="background: var(--card-bg); backdrop-filter: blur(20px); border-radius: var(--border-radius); box-shadow: var(--box-shadow); padding: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.2); transition: var(--transition); position: relative; overflow: hidden;">
             <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #f59e0b, #d97706);"></div>
             <div style="width: 50px; height: 50px; background: var(--warning-light); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--warning); font-size: 1.5rem; margin-bottom: 1rem;">
                 <i class="fas fa-user"></i>
@@ -373,9 +409,11 @@
             <div style="color: var(--secondary); font-size: 0.9rem;">
                 Regular Users
             </div>
+            </div>
         </div>
         
-        <div style="background: var(--card-bg); backdrop-filter: blur(20px); border-radius: var(--border-radius); box-shadow: var(--box-shadow); padding: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.2); transition: var(--transition); position: relative; overflow: hidden;">
+        <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
+            <div style="background: var(--card-bg); backdrop-filter: blur(20px); border-radius: var(--border-radius); box-shadow: var(--box-shadow); padding: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.2); transition: var(--transition); position: relative; overflow: hidden;">
             <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #06b6d4, #0891b2);"></div>
             <div style="width: 50px; height: 50px; background: var(--info-light); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--info); font-size: 1.5rem; margin-bottom: 1rem;">
                 <i class="fas fa-chart-line"></i>
@@ -386,9 +424,11 @@
             <div style="color: var(--secondary); font-size: 0.9rem;">
                 Total Analyses
             </div>
+            </div>
         </div>
         
-        <div style="background: var(--card-bg); backdrop-filter: blur(20px); border-radius: var(--border-radius); box-shadow: var(--box-shadow); padding: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.2); transition: var(--transition); position: relative; overflow: hidden;">
+        <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
+            <div style="background: var(--card-bg); backdrop-filter: blur(20px); border-radius: var(--border-radius); box-shadow: var(--box-shadow); padding: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.2); transition: var(--transition); position: relative; overflow: hidden;">
             <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #ef4444, #dc2626);"></div>
             <div style="width: 50px; height: 50px; background: var(--danger-light); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--danger); font-size: 1.5rem; margin-bottom: 1rem;">
                 <i class="fas fa-pepper-hot"></i>
@@ -398,6 +438,7 @@
             </div>
             <div style="color: var(--secondary); font-size: 0.9rem;">
                 Total Peppers
+            </div>
             </div>
         </div>
     </div>
@@ -430,7 +471,7 @@
                 <tbody>
                     {% for stat in user_stats %}
                     <tr>
-                        <td>
+                        <td data-label="User">
                             <div class="user-info">
                                 <div class="user-avatar">
                                     {{ stat.user.username[0].upper() }}
@@ -441,22 +482,22 @@
                                 </div>
                             </div>
                         </td>
-                        <td>
+                        <td data-label="Role">
                             <span class="role-badge role-{{ stat.user.role }}">
                                 {{ stat.user.role }}
                             </span>
                         </td>
-                        <td><strong>{{ stat.total_analyses }}</strong></td>
-                        <td><strong>{{ stat.total_peppers }}</strong></td>
-                        <td><strong>{{ stat.avg_quality }}</strong></td>
-                        <td>
+                        <td data-label="Analyses"><strong>{{ stat.total_analyses }}</strong></td>
+                        <td data-label="Peppers"><strong>{{ stat.total_peppers }}</strong></td>
+                        <td data-label="Avg Quality"><strong>{{ stat.avg_quality }}</strong></td>
+                        <td data-label="Last Login">
                             {% if stat.last_activity %}
                                 <span style="font-size: 0.875rem;">{{ stat.last_activity.strftime('%Y-%m-%d %H:%M') }}</span>
                             {% else %}
                                 <span style="color: var(--secondary); font-size: 0.875rem;">Never</span>
                             {% endif %}
                         </td>
-                        <td>
+                        <td data-label="Actions">
                             <div class="user-actions">
                                 <button class="action-btn action-btn-view" onclick="viewUserAnalytics({{ stat.user.id }})" title="View Analytics">
                                     <i class="fas fa-chart-bar"></i>
