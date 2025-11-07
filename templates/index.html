@@ -347,6 +347,40 @@
     
     <!-- PWA Install Banner Styles -->
     <style>
+        /* Non-Pepper Warning Styles */
+        .non-pepper-warning {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            border-left: 4px solid #f39c12;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+
+        .non-pepper-warning i {
+            font-size: 2rem;
+            color: #f39c12;
+        }
+
+        .non-pepper-warning .warning-content h4 {
+            margin: 0 0 0.5rem 0;
+            color: #856404;
+            font-size: 1.1rem;
+        }
+
+        .non-pepper-warning .warning-content p {
+            margin: 0 0 0.5rem 0;
+            color: #856404;
+            font-weight: 500;
+        }
+
+        .non-pepper-warning .warning-content small {
+            color: #856404;
+            opacity: 0.8;
+        }
+        
         .install-banner, .update-banner {
             position: fixed;
             top: 80px;

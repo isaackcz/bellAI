@@ -5,7 +5,7 @@ Handles notification management for admin and user notification display
 import os
 import json
 from datetime import datetime
-from flask import Blueprint, render_template, request, jsonify, session, redirect, url_for, flash, send_from_directory
+from flask import Blueprint, render_template, request, jsonify, session, redirect, url_for, flash, send_from_directory, current_app
 from functools import wraps
 from werkzeug.utils import secure_filename
 from models import db, User, Notification, NotificationAttachment, NotificationRead
@@ -36,12 +36,26 @@ def login_required(f):
     return decorated_function
 
 # Configuration for file uploads
-UPLOAD_FOLDER = 'notifications_files'
+# Use app-configured UPLOAD_FOLDER with a subdirectory to ensure a writable path inside containers
+NOTIFICATIONS_SUBDIR = 'notifications'
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'zip', 'rar'}
 MAX_FILE_SIZE = 16 * 1024 * 1024  # 16MB
 
-# Ensure upload directory exists
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+def get_notifications_upload_folder():
+    """Return absolute path to notifications upload dir and ensure it exists.
+
+    Uses the application's configured UPLOAD_FOLDER to avoid permission issues
+    when running in containers or read-only working directories.
+    """
+    base_upload = current_app.config.get('UPLOAD_FOLDER', os.path.join(os.getcwd(), 'uploads'))
+    target_dir = os.path.join(base_upload, NOTIFICATIONS_SUBDIR)
+    os.makedirs(target_dir, exist_ok=True)
+    # Ensure directory is writable
+    try:
+        os.chmod(target_dir, 0o777)
+    except:
+        pass  # Ignore permission errors if we can't set them
+    return target_dir
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -256,27 +270,47 @@ def upload_file():
         original_filename = file.filename
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         filename = f"{timestamp}_{secure_filename(original_filename)}"
-        file_path = os.path.join(UPLOAD_FOLDER, filename)
+        upload_folder = get_notifications_upload_folder()
+        file_path = os.path.join(upload_folder, filename)
+        
+        # Verify upload folder is writable
+        if not os.access(upload_folder, os.W_OK):
+            return jsonify({'error': f'Upload directory is not writable: {upload_folder}'}), 500
         
         # Save file
-        file.save(file_path)
+        try:
+            file.save(file_path)
+        except PermissionError:
+            return jsonify({'error': f'Permission denied: Cannot write to {upload_folder}'}), 500
+        except Exception as save_error:
+            return jsonify({'error': f'Failed to save file: {str(save_error)}'}), 500
         
         # Get file info
         file_size = os.path.getsize(file_path)
         file_type = get_file_type(original_filename)
         
         # Create attachment record (not linked to notification yet)
-        attachment = NotificationAttachment(
-            filename=filename,
-            original_filename=original_filename,
-            file_path=file_path,
-            file_size=file_size,
-            mime_type=file.content_type,
-            file_type=file_type
-        )
-        
-        db.session.add(attachment)
-        db.session.commit()
+        try:
+            attachment = NotificationAttachment(
+                filename=filename,
+                original_filename=original_filename,
+                file_path=file_path,
+                file_size=file_size,
+                mime_type=file.content_type,
+                file_type=file_type
+            )
+            
+            db.session.add(attachment)
+            db.session.commit()
+        except Exception as db_error:
+            # Clean up uploaded file if DB save fails
+            try:
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+            except:
+                pass
+            db.session.rollback()
+            return jsonify({'error': f'Database error: {str(db_error)}'}), 500
         
         return jsonify({
             'message': 'File uploaded successfully',
@@ -284,7 +318,8 @@ def upload_file():
         })
     
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        import traceback
+        return jsonify({'error': str(e), 'traceback': traceback.format_exc()}), 500
 
 @notifications_bp.route('/notifications/attachment/<int:attachment_id>')
 @login_required

@@ -213,31 +213,18 @@
                 return;
             }
             
+            // Show warning message instead of listing objects
             generalSection.style.display = 'block';
-            
-            let html = '';
-            objects.forEach((obj, index) => {
-                if (obj.confidence > 0.3) {
-                    const confidencePercent = Math.round(obj.confidence * 100);
-                    html += `
-                    <div class="detection-item" style="animation-delay: ${index * 0.1}s">
-                        <div class="detection-info">
-                            <div class="detection-class">${obj.class_name}</div>
-                            <div class="detection-confidence">${confidencePercent}% confidence</div>
-                            <div class="confidence-bar">
-                                <div class="confidence-level" style="width: ${confidencePercent}%"></div>
-                            </div>
-                        </div>
-                        <div class="detection-id">ID: ${obj.class_id}</div>
-                    </div>`;
-                }
-            });
-            
-            if (html === '') {
-                html = '<div class="no-detections"><i class="fas fa-search"></i><span>No general objects detected with sufficient confidence</span></div>';
-            }
-            
-            generalObjects.innerHTML = html;
+            generalObjects.innerHTML = `
+                <div class="non-pepper-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <div class="warning-content">
+                        <h4>Non-Pepper Objects Detected</h4>
+                        <p>This is not a bell pepper. ${objects.length} other object(s) detected in the image.</p>
+                        <small>Only bell peppers are analyzed for quality assessment.</small>
+                    </div>
+                </div>
+            `;
         }
         
         // Function to convert numeric quality values to human-readable descriptions

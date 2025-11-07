@@ -318,7 +318,7 @@ class Notification(db.Model):
 class NotificationAttachment(db.Model):
     """File attachments for notifications"""
     id = db.Column(db.Integer, primary_key=True)
-    notification_id = db.Column(db.Integer, db.ForeignKey('notification.id'), nullable=False)
+    notification_id = db.Column(db.Integer, db.ForeignKey('notification.id'), nullable=True)  # Allow null for pre-uploaded attachments
     
     # File information
     filename = db.Column(db.String(255), nullable=False)

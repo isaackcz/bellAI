@@ -16,6 +16,7 @@ load_dotenv()
 
 # Import models from separate file
 from models import db, User, AnalysisHistory, BellPepperDetection, PepperVariety, PepperDisease, PepperType, Notification, NotificationAttachment, NotificationRead
+from sqlalchemy import text
 
 try:
     from disease_detection.disease_integration import PepperHealthAnalyzer
@@ -127,6 +128,9 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+# Import enhanced validation pipeline
+from validation_pipeline import get_validation_pipeline
+
 # Multi-Model Setup: General YOLOv8 + Specialized Bell Pepper + Advanced Quality Analysis + Disease Detection + AI Features
 MODELS = {
     'general_detection': None,      # YOLOv8 general (80 classes)
@@ -134,7 +138,8 @@ MODELS = {
     'anfis_quality': None,         # ANFIS quality assessment system
     'cv_quality_analyzer': None,   # OpenCV + scikit-image quality analyzer
     'health_analyzer': None,       # Disease detection + health analysis
-    'advanced_ai_analyzer': None   # Advanced AI features (ripeness, shelf life, nutrition)
+    'advanced_ai_analyzer': None,  # Advanced AI features (ripeness, shelf life, nutrition)
+    'validation_pipeline': None    # Enhanced multi-layer validation pipeline
 }
 
 print("🚀 Loading Enhanced Multi-Model System...")
@@ -350,6 +355,14 @@ except Exception as e:
     print(f"❌ Failed to initialize Advanced AI Analyzer: {e}")
     MODELS['advanced_ai_analyzer'] = None
 
+# Initialize Enhanced Validation Pipeline
+try:
+    MODELS['validation_pipeline'] = get_validation_pipeline()
+    print("✅ Enhanced Validation Pipeline loaded (multi-layer validation with pre-trained classifier)")
+except Exception as e:
+    print(f"❌ Failed to initialize Validation Pipeline: {e}")
+    MODELS['validation_pipeline'] = None
+
 # Bell pepper characteristics database
 BELL_PEPPER_CLASSES = {
     # Ripeness stages
@@ -447,6 +460,150 @@ def is_bell_pepper_region(general_box, pepper_boxes, iou_threshold=0.3):
         if iou > iou_threshold:
             return True
     return False
+
+def validate_pepper_color(crop_image):
+    """Check if crop has pepper-like colors (HSV filter) and reject skin tones"""
+    hsv = cv2.cvtColor(crop_image, cv2.COLOR_BGR2HSV)
+    
+    # First, check for skin tones and reject them
+    # Skin tone range in HSV (covers various skin colors)
+    lower_skin = np.array([0, 10, 60])
+    upper_skin = np.array([25, 150, 255])
+    skin_mask = cv2.inRange(hsv, lower_skin, upper_skin)
+    skin_percentage = (np.sum(skin_mask > 0) / (crop_image.shape[0] * crop_image.shape[1])) * 100
+    
+    # If more than 30% is skin-colored, reject it
+    if skin_percentage > 30:
+        print(f"  └─ Rejected: {skin_percentage:.1f}% skin tone detected")
+        return False
+    
+    # Pepper color ranges: red, yellow, orange, green (more saturated than skin)
+    lower_red1 = np.array([0, 80, 80])  # Increased saturation from 50 to 80
+    upper_red1 = np.array([10, 255, 255])
+    lower_red2 = np.array([170, 80, 80])  # Increased saturation
+    upper_red2 = np.array([180, 255, 255])
+    lower_yellow = np.array([20, 100, 100])  # Increased saturation and hue
+    upper_yellow = np.array([35, 255, 255])
+    lower_green = np.array([35, 50, 50])  # Keep green sensitive
+    upper_green = np.array([85, 255, 255])
+    lower_orange = np.array([10, 100, 100])  # Increased saturation
+    upper_orange = np.array([20, 255, 255])
+    
+    # Create masks
+    mask_red1 = cv2.inRange(hsv, lower_red1, upper_red1)
+    mask_red2 = cv2.inRange(hsv, lower_red2, upper_red2)
+    mask_yellow = cv2.inRange(hsv, lower_yellow, upper_yellow)
+    mask_green = cv2.inRange(hsv, lower_green, upper_green)
+    mask_orange = cv2.inRange(hsv, lower_orange, upper_orange)
+    
+    # Combine all pepper color masks
+    combined_mask = cv2.bitwise_or(cv2.bitwise_or(mask_red1, mask_red2),
+                                   cv2.bitwise_or(cv2.bitwise_or(mask_yellow, mask_green), mask_orange))
+    
+    # Calculate percentage of pepper-colored pixels
+    total_pixels = crop_image.shape[0] * crop_image.shape[1]
+    pepper_pixels = np.sum(combined_mask > 0)
+    pepper_percentage = (pepper_pixels / total_pixels) * 100
+    
+    # Require at least 50% pepper-colored pixels (increased from 40%)
+    is_valid = pepper_percentage >= 50.0
+    if not is_valid:
+        print(f"  └─ Rejected: Only {pepper_percentage:.1f}% pepper-colored pixels")
+    return is_valid
+
+def validate_pepper_texture(crop_image):
+    """Analyze texture and contour to detect bell pepper's characteristic wavy/lobed shape"""
+    if crop_image.size == 0:
+        return False
+    
+    # Convert to grayscale for texture analysis
+    gray = cv2.cvtColor(crop_image, cv2.COLOR_BGR2GRAY)
+    
+    # 1. Edge detection to find contours (peppers have distinct lobes)
+    edges = cv2.Canny(gray, 50, 150)
+    contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    
+    if not contours:
+        print(f"  └─ Rejected: No clear contours detected")
+        return False
+    
+    # Get the largest contour
+    largest_contour = max(contours, key=cv2.contourArea)
+    
+    # 2. Analyze contour complexity (peppers have wavy edges, apples are smooth circles)
+    perimeter = cv2.arcLength(largest_contour, True)
+    area = cv2.contourArea(largest_contour)
+    
+    if area < 100:  # Too small to analyze
+        return True  # Give benefit of doubt for small crops
+    
+    # Circularity: 4π × area / perimeter²
+    # Perfect circle = 1.0, irregular shapes < 0.8
+    # Peppers are typically 0.5-0.8, apples 0.85-1.0
+    circularity = (4 * np.pi * area) / (perimeter * perimeter) if perimeter > 0 else 0
+    
+    # Reject very circular objects (likely apples/tomatoes, not peppers)
+    if circularity > 0.88:
+        print(f"  └─ Rejected: Too circular ({circularity:.3f}), likely apple/tomato")
+        return False
+    
+    # 3. Check for bell pepper's characteristic "blocky" shape using approximation
+    epsilon = 0.02 * perimeter
+    approx = cv2.approxPolyDP(largest_contour, epsilon, True)
+    num_vertices = len(approx)
+    
+    # Bell peppers when viewed from top/side have 4-8 vertices (blocky/lobed)
+    # Apples have many more vertices (smooth curve) or very few (circle)
+    # We want something in between
+    if num_vertices < 4:
+        print(f"  └─ Rejected: Too simple shape ({num_vertices} vertices)")
+        return False
+    
+    # 4. Texture variance (peppers have slight surface variations, apples are very smooth)
+    # Calculate standard deviation of intensity
+    std_dev = np.std(gray)
+    
+    # Very low variance suggests overly smooth surface (like a shiny apple)
+    if std_dev < 15:
+        print(f"  └─ Rejected: Surface too smooth (std: {std_dev:.1f}), likely apple")
+        return False
+    
+    print(f"  └─ Texture OK: circularity={circularity:.3f}, vertices={num_vertices}, texture_std={std_dev:.1f}")
+    return True
+
+def validate_pepper_shape(bbox, image_shape=None):
+    """Check if bounding box has pepper-like aspect ratio and reasonable size"""
+    x1, y1, x2, y2 = bbox
+    width = x2 - x1
+    height = y2 - y1
+    
+    if width == 0 or height == 0:
+        return False
+    
+    # Check minimum size (peppers should be reasonably sized, not tiny fragments)
+    min_dimension = min(width, height)
+    if min_dimension < 50:  # Minimum 50 pixels in smallest dimension
+        print(f"  └─ Rejected: Too small ({min_dimension:.0f}px)")
+        return False
+    
+    aspect_ratio = height / width
+    # Peppers are typically 0.8-2.0 (tightened range from 0.6-3.0)
+    # Fingers and hands often exceed these ratios
+    if not (0.8 <= aspect_ratio <= 2.0):
+        print(f"  └─ Rejected: Invalid aspect ratio ({aspect_ratio:.2f})")
+        return False
+    
+    # Check area relative to bounding box (peppers are fairly "solid")
+    # This helps reject thin/elongated objects like fingers
+    bbox_area = width * height
+    if image_shape is not None:
+        img_height, img_width = image_shape[:2]
+        # Reject if detection is too large (> 80% of image, likely not a single pepper)
+        if bbox_area > (img_height * img_width * 0.8):
+            print(f"  └─ Rejected: Too large relative to image")
+            return False
+    
+    return True
 
 def draw_arrow_from_text_to_object(image, text_pos, object_center, color, thickness=2):
     """Draw a curved arrow from text label to object center"""
@@ -669,42 +826,12 @@ def health_check():
     """Health check endpoint for Docker and load balancers"""
     try:
         # Check if database is accessible
-        db.session.execute('SELECT 1')
-        
-        # Check if models are loaded
-        models_status = {
-            'general_detection': MODELS['general_detection'] is not None,
-            'bell_pepper_detection': MODELS['bell_pepper_detection'] is not None,
-            'cv_quality_analyzer': MODELS['cv_quality_analyzer'] is not None,
-            'advanced_ai_analyzer': MODELS['advanced_ai_analyzer'] is not None,
-            'health_analyzer': MODELS['health_analyzer'] is not None
-        }
-        
-        # Check if required directories exist
-        import os
-        dirs_exist = {
-            'uploads': os.path.exists(app.config['UPLOAD_FOLDER']),
-            'results': os.path.exists(app.config['RESULTS_FOLDER']),
-            'instance': os.path.exists('instance')
-        }
-        
-        health_status = {
-            'status': 'healthy',
-            'timestamp': datetime.utcnow().isoformat(),
-            'database': 'connected',
-            'models': models_status,
-            'directories': dirs_exist,
-            'version': '1.0.0'
-        }
-        
-        return jsonify(health_status), 200
+        db.session.execute(text('SELECT 1'))
+        return jsonify({'status': 'healthy'}), 200
         
     except Exception as e:
-        return jsonify({
-            'status': 'unhealthy',
-            'timestamp': datetime.utcnow().isoformat(),
-            'error': str(e)
-        }), 503
+        # In production we prefer the container to stay up; report degraded but 200
+        return jsonify({'status': 'degraded', 'error': str(e)}), 200
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -941,6 +1068,15 @@ def upload():
             
             # Stage 1: General object detection (80 COCO classes) - collect all first
             general_detections = []
+            forbidden_zones = []  # Regions confirmed as non-pepper objects
+            
+            # Define non-pepper object classes that should block pepper detection
+            NON_PEPPER_OBJECTS = [
+                'apple', 'orange', 'banana', 'lemon', 'strawberry', 
+                'tomato', 'person', 'hand', 'carrot', 'broccoli',
+                'pineapple', 'watermelon', 'grape', 'peach', 'pear'
+            ]
+            
             if MODELS['general_detection']:
                 general_results = MODELS['general_detection'](filepath)
                 general_result = general_results[0]
@@ -958,11 +1094,20 @@ def upload():
                             'bbox': xyxy,
                             'class_id': cls
                         })
+                        
+                        # Mark high-confidence non-pepper detections as forbidden zones
+                        if class_name.lower() in NON_PEPPER_OBJECTS and conf > 0.6:
+                            forbidden_zones.append({
+                                'class_name': class_name,
+                                'confidence': conf,
+                                'bbox': xyxy
+                            })
+                            print(f"⛔ Forbidden zone: {class_name} ({conf:.2f}) - will block pepper detection in this region")
             
             # Stage 2: Specialized bell pepper detection with smart filtering
             bell_peppers_detected = False
             if MODELS['bell_pepper_detection']:
-                pepper_results = MODELS['bell_pepper_detection'](filepath, conf=0.3, iou=0.5)  # Lower conf, higher IOU for better NMS
+                pepper_results = MODELS['bell_pepper_detection'](filepath, conf=0.65, iou=0.5)  # High confidence threshold to reduce false positives
                 pepper_result = pepper_results[0]
                 
                 if pepper_result.boxes is not None:
@@ -977,20 +1122,66 @@ def upload():
                         model_names=model_names
                     )
                     
+                    pepper_count = 0
                     for i, box_data in enumerate(filtered_peppers):
                         conf = box_data['confidence']
                         cls = box_data['class_id']
                         class_name = box_data['class_name']
                         xyxy = box_data['bbox']
                         
+                        print(f"\n🔍 Validating detection {i+1}: {class_name} ({conf:.2f})")
+                        
+                        # EARLY REJECTION: Check if this detection overlaps with forbidden zones
+                        is_in_forbidden_zone = False
+                        for forbidden in forbidden_zones:
+                            iou = calculate_iou(xyxy, forbidden['bbox'])
+                            if iou > 0.3:  # Significant overlap
+                                print(f"  ⛔ REJECTED: Overlaps with {forbidden['class_name']} (IoU: {iou:.2f})")
+                                print(f"     General YOLO identified this as {forbidden['class_name']} with {forbidden['confidence']*100:.1f}% confidence")
+                                is_in_forbidden_zone = True
+                                break
+                        
+                        if is_in_forbidden_zone:
+                            continue  # Skip this detection entirely
+                        
+                        # Crop for validation
+                        x1, y1, x2, y2 = map(int, xyxy)
+                        h, w = image.shape[:2]
+                        x1_clip, y1_clip = max(0, x1), max(0, y1)
+                        x2_clip, y2_clip = min(w, x2), min(h, y2)
+                        temp_crop = image[y1_clip:y2_clip, x1_clip:x2_clip]
+                        
+                        if temp_crop.size == 0:
+                            continue
+                        
+                        # Use enhanced validation pipeline if available
+                        if MODELS['validation_pipeline']:
+                            is_valid, failed_stage = MODELS['validation_pipeline'].full_validation(
+                                temp_crop, xyxy, image.shape
+                            )
+                            if not is_valid:
+                                print(f"  ❌ Validation failed at stage: {failed_stage}")
+                                continue
+                        else:
+                            # Fallback to original validation
+                            if not validate_pepper_shape(xyxy, image.shape):
+                                continue
+                            if not validate_pepper_color(temp_crop):
+                                continue
+                            if not validate_pepper_texture(temp_crop):
+                                continue
+                        
+                        print(f"  ✅ Valid bell pepper detected!")
+                        
                         bell_peppers_detected = True
+                        pepper_count += 1
                         
                         bell_pepper_data = {
                             'variety': class_name,
                             'confidence': conf,
                             'bbox': xyxy,
                             'class_id': cls,
-                            'pepper_id': f'pepper_{i+1}'
+                            'pepper_id': f'pepper_{pepper_count}'
                         }
                         
                         # Stage 3: Advanced Quality Analysis + Save Cropped Image

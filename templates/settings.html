@@ -5,6 +5,19 @@
 
 {% block extra_styles %}
 <style>
+    /* Lightweight responsive grid (Bootstrap-like) */
+    .container-xl { width: 100%; margin-left: auto; margin-right: auto; padding-left: 12px; padding-right: 12px; }
+    @media (min-width: 576px) { .container-xl { max-width: 540px; } }
+    @media (min-width: 768px) { .container-xl { max-width: 720px; } }
+    @media (min-width: 992px) { .container-xl { max-width: 960px; } }
+    @media (min-width: 1200px) { .container-xl { max-width: 1140px; } }
+    @media (min-width: 1400px) { .container-xl { max-width: 1320px; } }
+    .row { display: flex; flex-wrap: wrap; margin-left: -12px; margin-right: -12px; }
+    .row > [class^="col-"] { padding-left: 12px; padding-right: 12px; }
+    .col-12 { width: 100%; }
+    .col-xl-10 { width: 100%; }
+    @media (min-width: 1200px) { .col-xl-10 { width: 83.333%; } }
+    .mx-auto { margin-left: auto; margin-right: auto; }
     
     .btn {
         padding: 0.5rem 0.875rem;
@@ -354,7 +367,9 @@
 {% endblock %}
 
 {% block content %}
-<div style="max-width: 1400px; margin: 0 auto;">
+<div class="container-xl">
+  <div class="row">
+    <div class="col-12 col-xl-10 mx-auto">
     <!-- Page Header -->
     <div style="margin-bottom: 2rem;">
         <h1 style="font-size: 2rem; font-weight: 700; color: var(--dark); margin-bottom: 0.5rem;">
@@ -364,11 +379,12 @@
             System configuration and user management
         </p>
     </div>
+  </div>
+</div>
 
     <!-- System Statistics -->
-    <div class="row" style="margin-bottom: 3rem;">
-        <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
-            <div style="background: var(--card-bg); backdrop-filter: blur(20px); border-radius: var(--border-radius); box-shadow: var(--box-shadow); padding: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.2); transition: var(--transition); position: relative; overflow: hidden;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
+        <div style="background: var(--card-bg); backdrop-filter: blur(20px); border-radius: var(--border-radius); box-shadow: var(--box-shadow); padding: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.2); transition: var(--transition); position: relative; overflow: hidden;">
             <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--primary), var(--primary-hover));"></div>
             <div style="width: 50px; height: 50px; background: var(--primary-light); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--primary); font-size: 1.5rem; margin-bottom: 1rem;">
                 <i class="fas fa-users"></i>
@@ -379,11 +395,9 @@
             <div style="color: var(--secondary); font-size: 0.9rem;">
                 Total Users
             </div>
-            </div>
         </div>
         
-        <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
-            <div style="background: var(--card-bg); backdrop-filter: blur(20px); border-radius: var(--border-radius); box-shadow: var(--box-shadow); padding: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.2); transition: var(--transition); position: relative; overflow: hidden;">
+        <div style="background: var(--card-bg); backdrop-filter: blur(20px); border-radius: var(--border-radius); box-shadow: var(--box-shadow); padding: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.2); transition: var(--transition); position: relative; overflow: hidden;">
             <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #10b981, #059669);"></div>
             <div style="width: 50px; height: 50px; background: var(--success-light); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--success); font-size: 1.5rem; margin-bottom: 1rem;">
                 <i class="fas fa-user-shield"></i>
@@ -394,11 +408,9 @@
             <div style="color: var(--secondary); font-size: 0.9rem;">
                 Administrators
             </div>
-            </div>
         </div>
         
-        <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
-            <div style="background: var(--card-bg); backdrop-filter: blur(20px); border-radius: var(--border-radius); box-shadow: var(--box-shadow); padding: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.2); transition: var(--transition); position: relative; overflow: hidden;">
+        <div style="background: var(--card-bg); backdrop-filter: blur(20px); border-radius: var(--border-radius); box-shadow: var(--box-shadow); padding: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.2); transition: var(--transition); position: relative; overflow: hidden;">
             <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #f59e0b, #d97706);"></div>
             <div style="width: 50px; height: 50px; background: var(--warning-light); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--warning); font-size: 1.5rem; margin-bottom: 1rem;">
                 <i class="fas fa-user"></i>
@@ -409,11 +421,9 @@
             <div style="color: var(--secondary); font-size: 0.9rem;">
                 Regular Users
             </div>
-            </div>
         </div>
         
-        <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
-            <div style="background: var(--card-bg); backdrop-filter: blur(20px); border-radius: var(--border-radius); box-shadow: var(--box-shadow); padding: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.2); transition: var(--transition); position: relative; overflow: hidden;">
+        <div style="background: var(--card-bg); backdrop-filter: blur(20px); border-radius: var(--border-radius); box-shadow: var(--box-shadow); padding: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.2); transition: var(--transition); position: relative; overflow: hidden;">
             <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #06b6d4, #0891b2);"></div>
             <div style="width: 50px; height: 50px; background: var(--info-light); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--info); font-size: 1.5rem; margin-bottom: 1rem;">
                 <i class="fas fa-chart-line"></i>
@@ -424,11 +434,9 @@
             <div style="color: var(--secondary); font-size: 0.9rem;">
                 Total Analyses
             </div>
-            </div>
         </div>
         
-        <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
-            <div style="background: var(--card-bg); backdrop-filter: blur(20px); border-radius: var(--border-radius); box-shadow: var(--box-shadow); padding: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.2); transition: var(--transition); position: relative; overflow: hidden;">
+        <div style="background: var(--card-bg); backdrop-filter: blur(20px); border-radius: var(--border-radius); box-shadow: var(--box-shadow); padding: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.2); transition: var(--transition); position: relative; overflow: hidden;">
             <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #ef4444, #dc2626);"></div>
             <div style="width: 50px; height: 50px; background: var(--danger-light); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--danger); font-size: 1.5rem; margin-bottom: 1rem;">
                 <i class="fas fa-pepper-hot"></i>
@@ -438,7 +446,6 @@
             </div>
             <div style="color: var(--secondary); font-size: 0.9rem;">
                 Total Peppers
-            </div>
             </div>
         </div>
     </div>
@@ -471,7 +478,7 @@
                 <tbody>
                     {% for stat in user_stats %}
                     <tr>
-                        <td data-label="User">
+                        <td>
                             <div class="user-info">
                                 <div class="user-avatar">
                                     {{ stat.user.username[0].upper() }}
@@ -524,8 +531,7 @@
         </div>
         {% endif %}
     </div>
-</div>
-
+<!-- Create/Edit User Modal -->
 <!-- Create/Edit User Modal -->
 <div class="modal" id="userModal">
     <div class="modal-content">

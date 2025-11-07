@@ -272,6 +272,8 @@
     padding: 20px;
     max-width: 1400px;
     margin: 0 auto;
+    width: 100%;
+    overflow-x: hidden;
 }
 
 .page-header {
@@ -460,6 +462,7 @@
     margin: 0 0 8px 0;
     color: #2c3e50;
     font-size: 1.1rem;
+    word-break: break-word;
 }
 
 .notification-meta {
@@ -467,6 +470,7 @@
     gap: 15px;
     color: #7f8c8d;
     font-size: 13px;
+    flex-wrap: wrap;
 }
 
 .notification-message {
@@ -474,6 +478,7 @@
     margin-top: 8px;
     font-size: 14px;
     line-height: 1.4;
+    word-break: break-word;
 }
 
 .priority-badge {
@@ -504,6 +509,7 @@
 .notification-actions {
     display: flex;
     gap: 8px;
+    flex-wrap: wrap;
 }
 
 .action-btn {
@@ -743,6 +749,27 @@
     background: #f9fbfc;
 }
 
+.notification-details .attachment-link,
+.file-item .file-link {
+    color: #3498db;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: color 0.2s;
+}
+
+.notification-details .attachment-link:hover,
+.file-item .file-link:hover {
+    color: #2980b9;
+    text-decoration: underline;
+}
+
+.notification-details .attachment-link span,
+.file-item .file-link span {
+    cursor: pointer;
+}
+
 .form-group input:focus,
 .form-group textarea:focus,
 .form-group select:focus {
@@ -861,6 +888,14 @@
     border-color: #3498db;
 }
 
+/* Tablet */
+@media (max-width: 1024px) {
+    .notification-item {
+        grid-template-columns: 1fr auto auto;
+        gap: 12px;
+    }
+}
+
 @media (max-width: 768px) {
     .page-header {
         flex-direction: column;
@@ -872,10 +907,7 @@
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     }
     
-    .notification-item {
-        grid-template-columns: 1fr;
-        gap: 15px;
-    }
+    .notification-item { grid-template-columns: 1fr; gap: 12px; }
     
     .form-grid {
         grid-template-columns: 1fr;
@@ -885,6 +917,24 @@
     .notification-details-modal {
         width: 95%;
     }
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+    .notifications-container { padding: 12px; width: 100%; overflow-x: hidden; }
+    .header-content h1 { font-size: 1.5rem; }
+    .stat-number { font-size: 1.4rem; }
+    .priority-badge, .status-badge { font-size: 11px; }
+    .action-btn { padding: 6px 10px; font-size: 11px; }
+    .page-header, .filters-section, .stats-grid, .notifications-list, .notifications-table-container { max-width: 100%; overflow-x: hidden; }
+    .notifications-table { width: 100%; overflow-x: hidden; }
+}
+
+/* Prevent horizontal overflow from any child */
+.notifications-container *,
+.notifications-container *::before,
+.notifications-container *::after {
+    box-sizing: border-box;
 }
 </style>
 
@@ -1184,8 +1234,15 @@ function displayUploadedFiles() {
         <div class="file-item">
             <div class="file-info">
                 <i class="fas fa-${getFileIcon(file.file_type)}"></i>
+                ${file.id ? `
+                    <a href="/notifications/attachment/${file.id}" target="_blank" class="file-link">
                 <span>${escapeHtml(file.original_filename)}</span>
                 <span class="file-size">(${formatFileSize(file.file_size)})</span>
+                    </a>
+                ` : `
+                    <span>${escapeHtml(file.original_filename)}</span>
+                    <span class="file-size">(${formatFileSize(file.file_size)})</span>
+                `}
             </div>
             <button type="button" onclick="removeUploadedFile(${index})" class="btn btn-sm btn-danger">
                 <i class="fas fa-times"></i>
@@ -1441,8 +1498,10 @@ function displayNotificationDetails(data) {
                         ${notification.attachments.map(att => `
                             <div class="attachment-item">
                                 <i class="fas fa-${getFileIcon(att.file_type)}"></i>
+                                <a href="/notifications/attachment/${att.id}" target="_blank" class="attachment-link">
                                 <span>${escapeHtml(att.original_filename)}</span>
                                 <span class="file-size">(${formatFileSize(att.file_size)})</span>
+                                </a>
                             </div>
                         `).join('')}
                     </div>
@@ -1499,10 +1558,10 @@ function refreshNotifications() {
 }
 
 // Debounced search
-let searchTimeout;
+let notificationSearchTimeout;
 function debounceSearch() {
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => {
+    clearTimeout(notificationSearchTimeout);
+    notificationSearchTimeout = setTimeout(() => {
         loadNotifications(1);
     }, 500);
 }
