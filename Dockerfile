@@ -61,6 +61,7 @@ WORKDIR /app
 # Copy application code
 COPY --chown=pepperai:pepperai app.py .
 COPY --chown=pepperai:pepperai models.py .
+COPY --chown=pepperai:pepperai validation_pipeline.py .
 COPY --chown=pepperai:pepperai python_modules/ ./python_modules/
 COPY --chown=pepperai:pepperai disease_detection/ ./disease_detection/
 COPY --chown=pepperai:pepperai static/ ./static/
