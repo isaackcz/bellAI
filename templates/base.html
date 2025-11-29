@@ -1746,9 +1746,12 @@
                     html += `
                         <div class="suggestion-item" onclick="navigateAndScroll('${pepper.url}', '${pepper.scroll_target || ''}')">
                             <div class="suggestion-icon">
-                                ${pepper.metadata.crop_url ? 
-                                    `<img src="${pepper.metadata.crop_url}" alt="Pepper" class="suggestion-thumb">` :
+                                ${pepper.metadata.transparent_url ? 
+                                    `<img src="${pepper.metadata.transparent_url}" alt="Pepper" class="suggestion-thumb" style="background: transparent;">` :
+                                    (pepper.metadata.crop_url ? 
+                                        `<img src="${pepper.metadata.crop_url}" alt="Pepper" class="suggestion-thumb">` :
                                     `<i class="fas fa-pepper-hot"></i>`
+                                    )
                                 }
                             </div>
                             <div class="suggestion-content">
@@ -1960,9 +1963,12 @@
                     html += `
                         <div class="search-result-item" onclick="window.location.href='${pepper.url}'">
                             <div class="search-result-icon">
-                                ${pepper.metadata.crop_url ? 
-                                    `<img src="${pepper.metadata.crop_url}" alt="Pepper crop" class="pepper-crop-thumb">` :
+                                ${pepper.metadata.transparent_url ? 
+                                    `<img src="${pepper.metadata.transparent_url}" alt="Pepper" class="pepper-crop-thumb" style="background: transparent;">` :
+                                    (pepper.metadata.crop_url ? 
+                                        `<img src="${pepper.metadata.crop_url}" alt="Pepper crop" class="pepper-crop-thumb">` :
                                     `<i class="fas fa-pepper-hot"></i>`
+                                    )
                                 }
                             </div>
                             <div class="search-result-content">
@@ -2384,9 +2390,12 @@
                     html += `
                         <div class="suggestion-item" onclick="navigateAndScroll('${item.url}', '${item.scroll_target || ''}'); hideMobileSearch();">
                             <div class="suggestion-icon">
-                                ${item.metadata?.crop_url ? 
-                                    `<img src="${item.metadata.crop_url}" alt="Pepper" class="suggestion-thumb">` :
+                                ${item.metadata?.transparent_url ? 
+                                    `<img src="${item.metadata.transparent_url}" alt="Pepper" class="suggestion-thumb" style="background: transparent;">` :
+                                    (item.metadata?.crop_url ? 
+                                        `<img src="${item.metadata.crop_url}" alt="Pepper" class="suggestion-thumb">` :
                                     `<i class="fas fa-pepper-hot"></i>`
+                                    )
                                 }
                             </div>
                             <div class="suggestion-content">

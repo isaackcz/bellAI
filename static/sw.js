@@ -1,13 +1,17 @@
 // PepperAI Service Worker for PWA functionality
-const CACHE_NAME = 'pepperai-v1.0.0';
-const STATIC_CACHE = 'pepperai-static-v1';
-const DYNAMIC_CACHE = 'pepperai-dynamic-v1';
+const CACHE_NAME = 'pepperai-v1.1.0';
+const STATIC_CACHE = 'pepperai-static-v1.1';
+const DYNAMIC_CACHE = 'pepperai-dynamic-v1.1';
+const RESULTS_CACHE = 'pepperai-results-v1.1';
 
 // Files to cache for offline functionality
 const STATIC_FILES = [
   '/',
   '/static/css/styles.css',
+  '/static/css/new-analysis.css',
+  '/static/css/advanced-styles.css',
   '/static/js/script.js',
+  '/static/js/offline-storage.js',
   '/static/images/logo.svg',
   '/static/manifest.json',
   'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap',
@@ -43,7 +47,7 @@ self.addEventListener('activate', (event) => {
       .then((cacheNames) => {
         return Promise.all(
           cacheNames.map((cacheName) => {
-            if (cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE) {
+            if (cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE && cacheName !== RESULTS_CACHE) {
               console.log('🗑️ Service Worker: Deleting old cache', cacheName);
               return caches.delete(cacheName);
             }
@@ -82,14 +86,30 @@ async function handleGetRequest(request, url) {
       }
     }
     
+    // For result images, try cache first, then network
+    if (url.pathname.startsWith('/results/') || url.pathname.startsWith('/uploads/')) {
+      const cachedResponse = await caches.match(request);
+      if (cachedResponse) {
+        console.log('📋 Serving result from cache:', url.pathname);
+        return cachedResponse;
+      }
+    }
+    
     // For dynamic content, try network first
     const networkResponse = await fetch(request);
     
     // Cache successful responses
     if (networkResponse.status === 200) {
       const responseClone = networkResponse.clone();
-      const cache = await caches.open(DYNAMIC_CACHE);
-      cache.put(request, responseClone);
+      
+      // Cache result images separately
+      if (url.pathname.startsWith('/results/') || url.pathname.startsWith('/uploads/')) {
+        const resultsCache = await caches.open(RESULTS_CACHE);
+        resultsCache.put(request, responseClone);
+      } else {
+        const cache = await caches.open(DYNAMIC_CACHE);
+        cache.put(request, responseClone);
+      }
     }
     
     return networkResponse;
@@ -116,16 +136,40 @@ async function handleGetRequest(request, url) {
   }
 }
 
-// Handle upload requests - always go to network
+// Handle upload requests - queue if offline
 async function handleUploadRequest(request) {
   try {
     console.log('📤 Processing upload request');
-    return await fetch(request);
+    const response = await fetch(request);
+    
+    // If successful, notify clients
+    if (response.ok) {
+      const clients = await self.clients.matchAll();
+      clients.forEach(client => {
+        client.postMessage({
+          type: 'UPLOAD_SUCCESS',
+          timestamp: Date.now()
+        });
+      });
+    }
+    
+    return response;
   } catch (error) {
-    console.error('❌ Upload failed:', error);
+    console.error('❌ Upload failed (offline):', error);
+    
+    // Notify clients that upload should be queued
+    const clients = await self.clients.matchAll();
+    clients.forEach(client => {
+      client.postMessage({
+        type: 'UPLOAD_OFFLINE',
+        timestamp: Date.now()
+      });
+    });
+    
     return new Response(JSON.stringify({
       error: 'Upload failed - please check your connection and try again',
-      offline: true
+      offline: true,
+      queued: true
     }), {
       status: 503,
       headers: { 'Content-Type': 'application/json' }
@@ -133,7 +177,7 @@ async function handleUploadRequest(request) {
   }
 }
 
-// Background sync for offline uploads (future enhancement)
+// Background sync for offline uploads
 self.addEventListener('sync', (event) => {
   if (event.tag === 'background-upload') {
     console.log('🔄 Background sync: Processing offline uploads');
@@ -142,9 +186,28 @@ self.addEventListener('sync', (event) => {
 });
 
 async function processOfflineUploads() {
-  // Placeholder for background upload processing
-  console.log('📋 Processing offline uploads...');
+  try {
+    // Notify clients to process queued uploads
+    const clients = await self.clients.matchAll();
+    clients.forEach(client => {
+      client.postMessage({
+        type: 'SYNC_UPLOADS',
+        timestamp: Date.now()
+      });
+    });
+    console.log('✅ Background sync: Notified clients to process uploads');
+  } catch (error) {
+    console.error('❌ Background sync error:', error);
+  }
 }
+
+// Periodic background sync (if supported)
+self.addEventListener('periodicsync', (event) => {
+  if (event.tag === 'periodic-upload-sync') {
+    console.log('🔄 Periodic sync: Processing queued uploads');
+    event.waitUntil(processOfflineUploads());
+  }
+});
 
 // Push notifications (future enhancement)
 self.addEventListener('push', (event) => {
@@ -175,11 +238,26 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
-// Share target handler (for sharing images to the app)
+// Message handler for communication with clients
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SHARE_TARGET') {
     console.log('📤 Share target activated:', event.data);
     // Handle shared content
+  } else if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  } else if (event.data && event.data.type === 'CACHE_ANALYSIS') {
+    // Store analysis result in cache
+    const { analysisData, imageUrl } = event.data;
+    if (imageUrl) {
+      fetch(imageUrl)
+        .then(response => {
+          if (response.ok) {
+            const cache = caches.open(RESULTS_CACHE);
+            return cache.then(c => c.put(imageUrl, response));
+          }
+        })
+        .catch(err => console.error('Failed to cache analysis image:', err));
+    }
   }
 });
 

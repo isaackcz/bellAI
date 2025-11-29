@@ -190,7 +190,6 @@
                         </div>
                         <div>
                             <h3>General Object Detection</h3>
-                            <p>YOLOv8 detecting 80 COCO classes</p>
                         </div>
                     </div>
                     <div id="generalObjects" class="detections-list"></div>
@@ -204,7 +203,7 @@
                         </div>
                         <div>
                             <h3>Bell Pepper Detection & Health Assessment</h3>
-                            <p>Specialized YOLOv8 + Advanced Quality & Disease Analysis</p>
+                            <p>Specialized ANFIS + Advanced Quality & Disease Analysis</p>
                         </div>
                     </div>
                     <div id="bellPeppers" class="detections-list"></div>
@@ -213,9 +212,28 @@
         </section>
     </div>
 </div>
+
+<!-- Full Analysis Modal -->
+<div id="fullAnalysisModal" class="modal-overlay" style="display: none;">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h2>
+                <span class="flag-emoji">🇵🇭</span>
+                Bell Pepper Varieties in the Philippines & Best Uses
+            </h2>
+            <button class="modal-close" onclick="closeFullAnalysisModal()" aria-label="Close modal">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-content" id="fullAnalysisContent">
+            <!-- Content will be populated by JavaScript -->
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_scripts %}
+    <script src="/static/js/offline-storage.js"></script>
     <script src="/static/js/script.js"></script>
     
     <!-- PWA Registration Script -->

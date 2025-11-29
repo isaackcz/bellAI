@@ -22,6 +22,47 @@
 
         let stream = null;
         let processingStartTime = null;
+        
+        // Offline functionality
+        let isOnline = navigator.onLine;
+        let queuedUploadsCount = 0;
+        
+        // Initialize offline storage
+        let offlineStorageReady = false;
+        if (typeof window.offlineStorage !== 'undefined') {
+            window.offlineStorage.init().then(() => {
+                offlineStorageReady = true;
+                updateQueuedUploadsCount();
+                console.log('✅ Offline storage initialized');
+            }).catch(err => {
+                console.error('❌ Failed to initialize offline storage:', err);
+            });
+        }
+        
+        // Monitor online/offline status
+        window.addEventListener('online', () => {
+            isOnline = true;
+            updateConnectionStatus();
+            processQueuedUploads();
+        });
+        
+        window.addEventListener('offline', () => {
+            isOnline = false;
+            updateConnectionStatus();
+        });
+        
+        // Listen for service worker messages
+        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.addEventListener('message', (event) => {
+                if (event.data.type === 'UPLOAD_OFFLINE') {
+                    handleOfflineUpload();
+                } else if (event.data.type === 'UPLOAD_SUCCESS') {
+                    updateQueuedUploadsCount();
+                } else if (event.data.type === 'SYNC_UPLOADS') {
+                    processQueuedUploads();
+                }
+            });
+        }
 
         // Accessibility and keyboard navigation
         document.addEventListener('keydown', (e) => {
@@ -186,6 +227,78 @@
             generalSection.style.display = 'none';
             pepperSection.style.display = 'none';
             imageContainer.classList.remove('fade-in');
+            // Clear any breathing overlays when hiding results
+            try {
+                const existingOverlay = document.getElementById('imageOverlay');
+                if (existingOverlay) existingOverlay.remove();
+            } catch (_) {}
+        }
+        
+        // Inject breathing animation CSS once
+        (function injectBreathingStyles() {
+            if (document.getElementById('breathingMaskStyles')) return;
+            const style = document.createElement('style');
+            style.id = 'breathingMaskStyles';
+            style.textContent = `
+@keyframes breathe{0%,100%{opacity:.35;filter:drop-shadow(0 0 0px rgba(105,108,255,.65))}50%{opacity:.55;filter:drop-shadow(0 0 14px rgba(105,108,255,.65))}}
+.image-overlay{position:absolute;inset:0;pointer-events:none}
+.pepper-mask{position:absolute;background:rgba(105,108,255,.85);animation:breathe 2s ease-in-out infinite;-webkit-mask-repeat:no-repeat;-webkit-mask-size:100% 100%;mask-repeat:no-repeat;mask-size:100% 100%;transition:opacity .2s ease;pointer-events:auto}
+.pepper-mask:hover{opacity:0}
+`;
+            document.head.appendChild(style);
+        })();
+        
+        // Utilities to manage overlays
+        function clearOverlays() {
+            const overlay = document.getElementById('imageOverlay');
+            if (overlay) overlay.remove();
+        }
+        
+        function renderBreathingOverlays(imgEl, peppers, originalWidth, originalHeight) {
+            if (!imgEl || !peppers || peppers.length === 0 || !originalWidth || !originalHeight) {
+                clearOverlays();
+                return;
+            }
+            
+            clearOverlays();
+            const wrapper = imgEl.parentElement || imageContainer;
+            if (!wrapper) return;
+            // Ensure wrapper can host absolute overlay
+            if (getComputedStyle(wrapper).position === 'static') {
+                wrapper.style.position = 'relative';
+            }
+            
+            const overlay = document.createElement('div');
+            overlay.id = 'imageOverlay';
+            overlay.className = 'image-overlay';
+            wrapper.appendChild(overlay);
+            
+            const displayWidth = imgEl.clientWidth || imgEl.width;
+            const displayHeight = imgEl.clientHeight || imgEl.height;
+            if (!displayWidth || !displayHeight) return;
+            
+            const scaleX = displayWidth / originalWidth;
+            const scaleY = displayHeight / originalHeight;
+            
+            peppers.forEach(p => {
+                if (!p || !p.transparent_png_url || !p.bbox) return;
+                const b = p.bbox;
+                if (typeof b.x !== 'number' || typeof b.y !== 'number' || typeof b.width !== 'number' || typeof b.height !== 'number') return;
+                
+                const el = document.createElement('div');
+                el.className = 'pepper-mask';
+                el.style.left = (b.x * scaleX) + 'px';
+                el.style.top = (b.y * scaleY) + 'px';
+                el.style.width = (b.width * scaleX) + 'px';
+                el.style.height = (b.height * scaleY) + 'px';
+                // Use the object cutout as a mask image
+                const maskUrl = p.transparent_png_url + '?t=' + Date.now();
+                el.style.webkitMaskImage = `url(${maskUrl})`;
+                el.style.maskImage = `url(${maskUrl})`;
+                // Base tint strength
+                el.style.opacity = '0.4';
+                overlay.appendChild(el);
+            });
         }
         
         function resetUploadPreview() {
@@ -245,6 +358,87 @@
             return 'quality-very-poor';
         }
         
+        // Philippines Bell Pepper Usage Suggestions
+        function getPhilippinesPepperSuggestions() {
+            return {
+                'Green': {
+                    emoji: '🟢',
+                    name: 'Green Bell Pepper',
+                    tagalog: 'Pinaka-karaniwan',
+                    taste: 'Slightly bitter, crunchy',
+                    bestFor: [
+                        'Sinigang na Baboy (garnish near the end of cooking)',
+                        'Menudo, Mechado, Afritada',
+                        'Stir-fry gulay like chopsuey',
+                        'Pinoy pizza & pancit'
+                    ],
+                    otherUses: [
+                        'Most affordable for bulk cooking in carinderias',
+                        'Adds aroma and color to viands'
+                    ]
+                },
+                'Red': {
+                    emoji: '🔴',
+                    name: 'Red Bell Pepper',
+                    tagalog: 'Hinog na green pepper',
+                    taste: 'Sweeter, strong aroma',
+                    bestFor: [
+                        'Sweet & sour dishes (Isda/Manok)',
+                        'Embutido, Lumpiang Shanghai mix',
+                        'Salads & fresh side dishes',
+                        'Inihaw with BBQ & kebabs'
+                    ],
+                    otherUses: [
+                        'Garnishing for fiestas and events',
+                        'High Vitamin C for healthy snacks'
+                    ]
+                },
+                'Yellow': {
+                    emoji: '🟡',
+                    name: 'Yellow Bell Pepper',
+                    tagalog: '',
+                    taste: 'Sweet & fruity',
+                    bestFor: [
+                        'Pasta dishes, carbonara toppings',
+                        'Burger & sandwich palaman',
+                        'Vegetable lumpia',
+                        'Salad bar sa hotel & restaurants'
+                    ],
+                    otherUses: [
+                        'Gives bright color variety for food presentation'
+                    ]
+                },
+                'Orange': {
+                    emoji: '🟠',
+                    name: 'Orange Bell Pepper',
+                    tagalog: '',
+                    taste: 'Sweet and crunchy',
+                    bestFor: [
+                        "Kids' baon/snacks (hindi maanghang)",
+                        'Stuffed bell pepper',
+                        'Colorful chopsuey and sautéed dishes'
+                    ],
+                    otherUses: [
+                        'Attractive for party platters and catering'
+                    ]
+                },
+                'Mini': {
+                    emoji: '🟣',
+                    name: 'Mini Bell Peppers',
+                    tagalog: 'Available in supermarkets, some farms in Benguet & Bukidnon',
+                    taste: 'Sweet small-size',
+                    bestFor: [
+                        'Healthy baon',
+                        'Appetizers filled with cream cheese or tuna spread',
+                        'Sushi and fusion cooking'
+                    ],
+                    otherUses: [
+                        'Decorative vegetable for plating'
+                    ]
+                }
+            };
+        }
+
         function displayBellPeppers(peppers) {
             if (!peppers || peppers.length === 0) {
                 pepperSection.style.display = 'none';
@@ -410,48 +604,352 @@
                                     <span class="storage-type">Optimal Storage</span>
                                     <span class="storage-duration">${shelfLife.optimal_storage.days} days</span>
                                 </div>
+                                ${shelfLife.carrier ? `
+                                <div class="carrier-section">
+                                    <h5 style="margin: 8px 0 4px 0;"><i class="fas fa-truck"></i> Carrier Shelf Life</h5>
+                                    <div class="carrier-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:10px; align-items:stretch;">
+                                        ${shelfLife.carrier.truck_refrigerated ? `<div class="storage-option" style="display:flex; justify-content:space-between; align-items:center; padding:10px; border:1px solid var(--gray); border-radius: var(--border-radius-sm); background: var(--card-bg);"><span><i class="fas fa-truck"></i> Truck (Refrigerated)</span><span class="storage-duration">${shelfLife.carrier.truck_refrigerated.days} days</span></div>` : ''}
+                                        ${shelfLife.carrier.truck_non_refrigerated ? `<div class="storage-option" style="display:flex; justify-content:space-between; align-items:center; padding:10px; border:1px solid var(--gray); border-radius: var(--border-radius-sm); background: var(--card-bg);"><span><i class="fas fa-truck-monster"></i> Truck (Non‑refrig)</span><span class="storage-duration">${shelfLife.carrier.truck_non_refrigerated.days} days</span></div>` : ''}
+                                        ${shelfLife.carrier.boat ? `<div class="storage-option" style="display:flex; justify-content:space-between; align-items:center; padding:10px; border:1px solid var(--gray); border-radius: var(--border-radius-sm); background: var(--card-bg);"><span><i class="fas fa-ship"></i> Boat</span><span class="storage-duration">${shelfLife.carrier.boat.days} days</span></div>` : ''}
+                                        ${shelfLife.carrier.air_cargo ? `<div class="storage-option" style="display:flex; justify-content:space-between; align-items:center; padding:10px; border:1px solid var(--gray); border-radius: var(--border-radius-sm); background: var(--card-bg);"><span><i class="fas fa-plane"></i> Air Cargo</span><span class="storage-duration">${shelfLife.carrier.air_cargo.days} days</span></div>` : ''}
+                                    </div>
+                                </div>` : ''}
                             </div>
                         </div>
                     `;
                 }
                 
-                // Market Analysis
-                let marketAnalysisHTML = '';
-                if (pepper.market_analysis) {
-                    const market = pepper.market_analysis;
-                    const gradeClass = market.grade.toLowerCase().replace(' ', '-');
+                // Generate Filipino Cuisine Suggestions Based on Analysis
+                function generateAnalysisBasedSuggestions(pepper) {
+                    const qa = pepper.quality_analysis || {};
+                    const ripeness = pepper.ripeness_prediction || {};
+                    const nutrition = pepper.nutrition || {};
+                    const variety = pepper.variety || 'Green';
+                    const varietyKey = variety.split(' ')[0];
+                    const usageRecs = pepper.usage_recommendations || {};
                     
+                    const qualityScore = qa.quality_score || 50;
+                    const ripenessLevel = qa.ripeness_level || 50;
+                    const surfaceQuality = qa.surface_quality || 50;
+                    const colorUniformity = qa.color_uniformity || 50;
+                    const ripenessStage = ripeness.current_stage || '';
+                    const vitaminC = nutrition.per_pepper?.vitamin_c || 0;
+                    
+                    // Get variety base info
+                    const suggestionsData = getPhilippinesPepperSuggestions();
+                    const varietyInfo = suggestionsData[varietyKey] || suggestionsData['Green'];
+                    
+                    let bestFor = [];
+                    
+                    // Check if suitable for salad (from backend analysis)
+                    const suitableForSalad = usageRecs.suitable_for_salad || 
+                        (ripenessLevel >= 60 && surfaceQuality >= 70 && 
+                         (varietyKey === 'Red' || varietyKey === 'Yellow' || varietyKey === 'Orange'));
+                    
+                    // Analysis-based suggestions
+                    // High quality + high ripeness = fresh/raw uses (salads)
+                    if (suitableForSalad) {
+                        bestFor.push('🥗 Salads & fresh side dishes');
+                        bestFor.push('Garnishing for fiestas and events');
+                        if (vitaminC >= 250) {
+                            bestFor.push('Healthy snacks (high Vitamin C)');
+                        }
+                    } else if (qualityScore >= 70 && ripenessLevel >= 70) {
+                        if (varietyKey === 'Red' || varietyKey === 'Yellow' || varietyKey === 'Orange') {
+                            bestFor.push('Salads & fresh side dishes (when fully ripe)');
+                            bestFor.push('Garnishing for fiestas and events');
+                        }
+                        if (vitaminC >= 250) {
+                            bestFor.push('Healthy snacks (high Vitamin C)');
+                        }
+                    }
+                    
+                    // Medium to high ripeness = sweet dishes
+                    if (ripenessLevel >= 60) {
+                        bestFor.push('Sweet & sour dishes (Isda/Manok)');
+                        if (varietyKey === 'Red') {
+                            bestFor.push('Embutido, Lumpiang Shanghai mix');
+                        }
+                    }
+                    
+                    // Low quality or poor surface = cooked dishes (masks imperfections)
+                    if (qualityScore < 60 || surfaceQuality < 50) {
+                        bestFor.push('Sinigang na Baboy (garnish near the end)');
+                        bestFor.push('Menudo, Mechado, Afritada');
+                        bestFor.push('Stir-fry gulay like chopsuey');
+                    } else {
+                        // Good quality = versatile uses
+                        if (varietyKey === 'Green') {
+                            bestFor.push('Menudo, Mechado, Afritada');
+                            bestFor.push('Pinoy pizza & pancit');
+                        } else if (varietyKey === 'Red') {
+                            bestFor.push('Inihaw with BBQ & kebabs');
+                        } else if (varietyKey === 'Yellow' || varietyKey === 'Orange') {
+                            bestFor.push('Pasta dishes, carbonara toppings');
+                            bestFor.push('Colorful chopsuey and sautéed dishes');
+                        }
+                    }
+                    
+                    // Always add common Filipino dishes based on variety if list is empty
+                    if (bestFor.length === 0) {
+                        bestFor = varietyInfo.bestFor.slice(0, 3);
+                    }
+                    
+                    return {
+                        emoji: varietyInfo.emoji,
+                        name: varietyInfo.name,
+                        tagalog: varietyInfo.tagalog,
+                        taste: varietyInfo.taste,
+                        bestFor: bestFor.slice(0, 3),
+                        suitableForSalad: suitableForSalad
+                    };
+                }
+                
+                // Market Analysis - Usage Recommendations Based on Analysis
+                let marketAnalysisHTML = '';
+                
+                // Use the SAME data sources as ripeness prediction, shelf life, and nutrition
+                // Get ripeness percentage from ripeness_prediction (same as ripeness analysis display)
+                const ripeness = pepper.ripeness_prediction || {};
+                const ripenessPercentage = ripeness.ripeness_percentage || 0;
+                
+                // Get surface quality from quality_analysis (same as other analyses)
+                const qa = pepper.quality_analysis || {};
+                const surfaceQuality = qa.surface_quality || 0;
+                
+                // Get variety
+                const variety = pepper.variety || 'Green';
+                const varietyKey = variety.split(' ')[0];
+                
+                // Check disease status (same logic as other analyses)
+                let hasDisease = false;
+                if (pepper.disease_analysis) {
+                    const disease = pepper.disease_analysis;
+                    if (typeof disease === 'object') {
+                        hasDisease = !disease.is_healthy || (disease.disease && disease.disease !== 'Healthy');
+                    } else if (typeof disease === 'string') {
+                        try {
+                            const diseaseParsed = JSON.parse(disease);
+                            hasDisease = !diseaseParsed.is_healthy || (diseaseParsed.disease && diseaseParsed.disease !== 'Healthy');
+                        } catch (e) {
+                            hasDisease = false;
+                        }
+                    }
+                }
+                
+                // Check for defects in recommendations
+                let hasDefect = false;
+                let defectMessage = '';
+                if (qa.recommendations && qa.recommendations.length > 0) {
+                    const defectKeywords = [
+                        'defect', 'defects', 'damage', 'damaged', 'inspect', 'inspection',
+                        'surface defect', 'surface defects', 'surface damage', 'damage or disease',
+                        'poor quality', 'quality issue', 'quality issues', 'blemish', 'blemishes',
+                        'bruise', 'bruised', 'crack', 'cracked', 'rot', 'rotting', 'decay', 'decaying'
+                    ];
+                    
+                    for (const rec of qa.recommendations) {
+                        const recLower = rec.toLowerCase();
+                        for (const keyword of defectKeywords) {
+                            if (recLower.includes(keyword)) {
+                                hasDefect = true;
+                                defectMessage = rec;
+                                break;
+                            }
+                        }
+                        if (hasDefect) break;
+                    }
+                }
+                
+                // Determine usage badges based on SAME data sources as other analyses
+                const badges = [];
+                
+                // Determine suitability flags (needed for detailed information)
+                let isSaladSuitable = false;
+                let isCookingSuitable = false;
+                let isSauceSuitable = false;
+                
+                // Only show badges if no disease detected AND no defects detected
+                if (!hasDisease && !hasDefect) {
+                    // Salad suitability: Use ripeness_percentage from ripeness_prediction (same source)
+                    // Criteria: ripeness >= 60%, surface quality >= 70%, healthy, Red/Yellow/Orange variety
+                    isSaladSuitable = (
+                        ripenessPercentage >= 60 && 
+                        surfaceQuality >= 70 && 
+                        (varietyKey === 'Red' || varietyKey === 'Yellow' || varietyKey === 'Orange')
+                    );
+                    
+                    // Cooking suitability: Use ripeness_percentage from ripeness_prediction
+                    // Suitable for cooking when ripeness is 30-80% (medium ripeness)
+                    isCookingSuitable = (
+                        ripenessPercentage >= 30 && ripenessPercentage < 80
+                    );
+                    
+                    // Sauce suitability: Use ripeness_percentage from ripeness_prediction
+                    // Very ripe (>=80%) or low surface quality (<50%) - best for processing
+                    isSauceSuitable = (
+                        ripenessPercentage >= 80 || surfaceQuality < 50
+                    );
+                    
+                    // Add salad badge if suitable
+                    if (isSaladSuitable) {
+                        badges.push('<span class="usage-badge usage-badge-salad" title="Suitable for fresh salads and raw consumption"><span class="usage-emoji">🥗</span> Suitable for salads</span>');
+                    }
+                    
+                    // Add cooking badge if suitable (or as default if no other badges)
+                    if (isCookingSuitable || (!isSaladSuitable && !isSauceSuitable)) {
+                        badges.push('<span class="usage-badge usage-badge-cooking" title="Best for cooking and prepared dishes"><span class="usage-emoji">🍽</span> Best for cooking</span>');
+                    }
+                    
+                    // Add sauce badge if suitable
+                    if (isSauceSuitable) {
+                        badges.push('<span class="usage-badge usage-badge-sauce" title="Ideal for sauces, seasoning, and processing"><span class="usage-emoji">🌶</span> For sauces or seasoning</span>');
+                    }
+                }
+                
+                const market = pepper.market_analysis;
+                const gradeClass = market ? market.grade.toLowerCase().replace(' ', '-') : '';
+                
+                if (pepper.market_analysis || badges.length > 0) {
                     marketAnalysisHTML = `
-                        <div class="market-analysis">
+                        <div class="market-analysis-compact">
                             <div class="analysis-header">
                                 <h4><i class="fas fa-chart-line"></i> Market Analysis</h4>
                             </div>
-                            <div class="market-content">
-                                <div class="market-grade ${gradeClass}">
-                                    <span class="grade-name">${market.grade}</span>
-                                    <span class="grade-description">${market.grade_description}</span>
+                            <div class="market-content-compact">
+                                ${market ? `
+                                <div class="market-grade-compact ${gradeClass}">
+                                    <span class="grade-name-compact">${market.grade}</span>
+                                    <span class="grade-description-compact">${market.grade_description}</span>
                                 </div>
-                                <div class="market-price">
+                                ${market.estimated_price_per_kg ? `
+                                <div class="market-price-compact">
                                     <i class="fas fa-peso-sign"></i>
                                     <span>₱${market.estimated_price_per_kg}/kg</span>
-                                </div>
+                                </div>` : ''}` : ''}
+                                
+                                ${badges.length > 0 ? `
+                                <div class="market-usage-section">
+                                    <div class="usage-header">
+                                        <i class="fas fa-utensils"></i>
+                                        <span>Usage Recommendations</span>
+                                    </div>
+                                    <div class="usage-badges-container">
+                                        ${badges.join('')}
+                                    </div>
+                                    <div class="usage-details">
+                                        ${isSaladSuitable ? `
+                                        <div class="usage-detail-item">
+                                            <div class="usage-detail-header">
+                                                <span class="usage-emoji">🥗</span>
+                                                <strong>Suitable for Salads</strong>
+                                            </div>
+                                            <div class="usage-detail-content">
+                                                <p>This ${variety} bell pepper is ideal for fresh consumption in salads due to:</p>
+                                                <ul>
+                                                    <li>Ripeness level: ${ripenessPercentage.toFixed(1)}% (optimal for raw consumption)</li>
+                                                    <li>Surface quality: ${surfaceQuality.toFixed(1)}% (excellent condition)</li>
+                                                    <li>Variety: ${varietyKey} peppers are naturally sweeter and perfect for salads</li>
+                                                    <li>Health status: Healthy and safe for raw consumption</li>
+                                                </ul>
+                                                <p class="usage-suggestion"><strong>Best uses:</strong> Fresh salads, garnishing, healthy snacks, side dishes, and raw consumption in Filipino cuisine like fresh lumpia or kinilaw preparations.</p>
+                                            </div>
+                                        </div>` : ''}
+                                        ${isCookingSuitable ? `
+                                        <div class="usage-detail-item">
+                                            <div class="usage-detail-header">
+                                                <span class="usage-emoji">🍽</span>
+                                                <strong>Best for Cooking</strong>
+                                            </div>
+                                            <div class="usage-detail-content">
+                                                <p>This ${variety} bell pepper is excellent for cooking and prepared dishes:</p>
+                                                <ul>
+                                                    <li>Ripeness level: ${ripenessPercentage.toFixed(1)}% (ideal for cooking - retains texture and flavor)</li>
+                                                    <li>Surface quality: ${surfaceQuality.toFixed(1)}% (good condition for processing)</li>
+                                                    <li>Variety: ${varietyKey} peppers add great flavor and color to cooked dishes</li>
+                                                </ul>
+                                                <p class="usage-suggestion"><strong>Best uses:</strong> Sinigang, Menudo, Mechado, Afritada, stir-fry dishes (chopsuey), Pinoy pizza, pancit, and other Filipino cooked dishes. The medium ripeness ensures it maintains its shape and texture during cooking.</p>
+                                            </div>
+                                        </div>` : ''}
+                                        ${isSauceSuitable ? `
+                                        <div class="usage-detail-item">
+                                            <div class="usage-detail-header">
+                                                <span class="usage-emoji">🌶</span>
+                                                <strong>For Sauces or Seasoning</strong>
+                                            </div>
+                                            <div class="usage-detail-content">
+                                                <p>This ${variety} bell pepper is recommended for sauces, seasoning, and food processing:</p>
+                                                <ul>
+                                                    <li>Ripeness level: ${ripenessPercentage.toFixed(1)}% (${ripenessPercentage >= 80 ? 'very ripe - maximum flavor' : 'optimal for processing'})</li>
+                                                    <li>Surface quality: ${surfaceQuality.toFixed(1)}% (${surfaceQuality < 50 ? 'lower quality - better suited for processing' : 'good for processing'})</li>
+                                                    <li>Variety: ${varietyKey} peppers provide rich flavor when processed</li>
+                                                </ul>
+                                                <p class="usage-suggestion"><strong>Best uses:</strong> Making sauces, pickles, relishes, seasoning blends, food processing, and value-added products. The high ripeness or processing-friendly quality makes it perfect for these applications.</p>
+                                            </div>
+                                        </div>` : ''}
+                                        <div class="usage-analysis-summary">
+                                            <div class="usage-summary-item">
+                                                <span class="usage-summary-label">Ripeness:</span>
+                                                <span class="usage-summary-value">${ripenessPercentage.toFixed(1)}%</span>
+                                            </div>
+                                            <div class="usage-summary-item">
+                                                <span class="usage-summary-label">Surface Quality:</span>
+                                                <span class="usage-summary-value">${surfaceQuality.toFixed(1)}%</span>
+                                            </div>
+                                            <div class="usage-summary-item">
+                                                <span class="usage-summary-label">Variety:</span>
+                                                <span class="usage-summary-value">${variety}</span>
+                                            </div>
+                                            <div class="usage-summary-item">
+                                                <span class="usage-summary-label">Health Status:</span>
+                                                <span class="usage-summary-value">${hasDisease ? '<span style="color: #ef4444;">Disease Detected</span>' : hasDefect ? '<span style="color: #f59e0b;">Defect Detected</span>' : '<span style="color: #10b981;">Healthy</span>'}</span>
+                                            </div>
+                                            ${hasDefect ? `
+                                            <div class="usage-summary-item" style="grid-column: 1 / -1;">
+                                                <span class="usage-summary-label">Defect Information:</span>
+                                                <span class="usage-summary-value" style="color: #f59e0b; font-size: 0.85rem;">${defectMessage || 'Surface defects or damage detected'}</span>
+                                            </div>` : ''}
+                                        </div>
+                                    </div>
+                                    ${hasDisease || hasDefect ? `
+                                    <div class="usage-warning">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        <span>${hasDefect ? 'Defect Detected' : 'Usage recommendations not available due to detected disease'}</span>
+                                    </div>` : ''}
+                                </div>` : (hasDisease || hasDefect ? `
+                                <div class="market-usage-section">
+                                    <div class="usage-warning">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        <span>${hasDefect ? `Defect Detected: ${defectMessage || 'Surface defects or damage detected. Please inspect the pepper before consumption.'}` : 'Usage recommendations not available - disease detected. Please treat the pepper before consumption.'}</span>
+                                    </div>
+                                </div>` : '')}
                             </div>
                         </div>
                     `;
                 }
                 
-                // Combine all advanced analyses
+                // Combine all advanced analyses - wrap in collapsible container
+                let advancedAnalysisToggleHTML = '';
                 if (ripenessAnalysisHTML || nutritionAnalysisHTML || shelfLifeHTML || marketAnalysisHTML) {
-                    advancedAnalysisHTML = `
-                        <div class="advanced-analysis-container">
-                            <div class="advanced-analysis-header">
-                                <h3><i class="fas fa-brain"></i> Advanced AI Analysis</h3>
-                            </div>
-                            <div class="advanced-analysis-grid">
-                                ${ripenessAnalysisHTML}
-                                ${nutritionAnalysisHTML}
-                                ${shelfLifeHTML}
-                                ${marketAnalysisHTML}
+                    const analysisId = `advanced-analysis-${pepper.pepper_id || index}`;
+                    advancedAnalysisToggleHTML = `
+                        <div class="advanced-analysis-toggle-section">
+                            <button class="btn-toggle-analysis" onclick="toggleAdvancedAnalysis('${analysisId}')" aria-expanded="false">
+                                <i class="fas fa-chevron-down"></i>
+                                <span>View Full Analysis</span>
+                            </button>
+                            <div id="${analysisId}" class="advanced-analysis-collapsible" style="display: none;">
+                                <div class="advanced-analysis-container">
+                                    <div class="advanced-analysis-header">
+                                        <h3><i class="fas fa-brain"></i> Advanced AI Analysis</h3>
+                                    </div>
+                                    <div class="advanced-analysis-grid">
+                                        ${ripenessAnalysisHTML}
+                                        ${nutritionAnalysisHTML}
+                                        ${shelfLifeHTML}
+                                        ${marketAnalysisHTML}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     `;
@@ -500,10 +998,12 @@
                     `;
                 }
                 
+                // Usage badges are now displayed in Market Analysis section (removed from here)
+                
                 html += `
                 <div class="detection-item pepper-item" style="animation-delay: ${index * 0.1}s">
                     <div class="pepper-header">
-                        ${pepper.crop_url ? `<img src="${pepper.crop_url}?t=${Date.now()}" alt="Bell Pepper ${pepper.pepper_id}" class="pepper-crop-image">` : ''}
+                        ${pepper.transparent_png_url ? `<img src="${pepper.transparent_png_url}?t=${Date.now()}" alt="Bell Pepper ${pepper.pepper_id}" class="pepper-crop-image" style="background: transparent; object-fit: contain;">` : (pepper.crop_url ? `<img src="${pepper.crop_url}?t=${Date.now()}" alt="Bell Pepper ${pepper.pepper_id}" class="pepper-crop-image">` : '')}
                         <div class="pepper-info">
                             <div class="pepper-title">
                                 <h3 class="pepper-name">
@@ -523,7 +1023,7 @@
                         ${healthStatusHTML}
                     </div>
                     ${qualityMetricsHTML}
-                    ${advancedAnalysisHTML}
+                    ${advancedAnalysisToggleHTML}
                     ${diseaseAnalysisHTML}
                     ${recommendationsHTML}
                 </div>`;
@@ -839,6 +1339,12 @@
             updateStatus('Processing image...', 'info', true);
             hideResults();
             
+            // Check if offline
+            if (!isOnline) {
+                await queueUploadForLater(fd);
+                return;
+            }
+            
             // Show progress bar
             showProgressBar();
             updateProgress(0, 10, 'Uploading image...');
@@ -848,6 +1354,16 @@
                 setTimeout(() => updateProgress(1, 30, 'Detecting objects with YOLOv8...'), 300);
                 
                 const resp = await fetch('/upload', { method: 'POST', body: fd });
+                
+                // Check if upload failed due to offline
+                if (!resp.ok) {
+                    const errorData = await resp.json().catch(() => ({}));
+                    if (errorData.offline || errorData.queued) {
+                        hideProgressBar();
+                        await queueUploadForLater(fd);
+                        return;
+                    }
+                }
                 
                 // Update progress during fetch
                 updateProgress(2, 60, 'Analyzing quality with ANFIS...');
@@ -863,13 +1379,30 @@
                 
                 updateProgress(4, 100, 'Complete!');
                 
+                // Save to offline cache
+                if (offlineStorageReady) {
+                    try {
+                        await window.offlineStorage.saveAnalysis({
+                            ...data,
+                            processing_time: Date.now() - processingStartTime
+                        });
+                    } catch (err) {
+                        console.warn('Failed to cache analysis:', err);
+                    }
+                }
+                
                 // Calculate processing time
                 const processingTimeMs = Date.now() - processingStartTime;
                 
-                // Show annotated image with proper container sizing
-                previewImg.src = data.result_url + '?t=' + Date.now();
+                // Show clean base image (no labels) for overlay rendering with safe fallbacks
+                const baseImageUrl = data.original_image_url || data.result_url || data.image_url;
+                if (!baseImageUrl) {
+                    console.warn('No base image URL found on response. Expected original_image_url/result_url/image_url.', data);
+                }
+                previewImg.src = (baseImageUrl || '') + (baseImageUrl ? ('?t=' + Date.now()) : '');
                 
                 // Determine image orientation and apply appropriate container class
+                const peppersLocal = data.bell_peppers || [];
                 previewImg.onload = function() {
                     const imageContainer = document.getElementById('imageContainer');
                     imageContainer.classList.remove('landscape', 'portrait');
@@ -879,6 +1412,9 @@
                     } else {
                         imageContainer.classList.add('portrait');
                     }
+                    
+                    // Render breathing overlays aligned to displayed size
+                    renderBreathingOverlays(previewImg, peppersLocal, this.naturalWidth, this.naturalHeight);
                 };
                 
                 showImageContainer();
@@ -934,4 +1470,123 @@
                 handleError(err, 'image processing');
             }
         }
+
+        // Toggle Advanced Analysis Function
+        window.toggleAdvancedAnalysis = function(analysisId) {
+            const collapsible = document.getElementById(analysisId);
+            if (!collapsible) return;
+            
+            // Find the button - it's the previous sibling in the parent container
+            const toggleSection = collapsible.parentElement;
+            const button = toggleSection?.querySelector('.btn-toggle-analysis');
+            
+            if (!button) return;
+            
+            const isExpanded = collapsible.style.display !== 'none';
+            const icon = button.querySelector('i');
+            const span = button.querySelector('span');
+            
+            if (isExpanded) {
+                // Collapse
+                collapsible.style.display = 'none';
+                if (icon) icon.className = 'fas fa-chevron-down';
+                if (span) span.textContent = 'View Full Analysis';
+                button.setAttribute('aria-expanded', 'false');
+            } else {
+                // Expand
+                collapsible.style.display = 'block';
+                if (icon) icon.className = 'fas fa-chevron-up';
+                if (span) span.textContent = 'Hide Full Analysis';
+                button.setAttribute('aria-expanded', 'true');
+                
+                // Smooth scroll to the expanded section
+                setTimeout(() => {
+                    collapsible.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 100);
+            }
+        };
+
+        // Full Analysis Modal Functions (make globally accessible)
+        window.openFullAnalysisModal = function() {
+            const modal = document.getElementById('fullAnalysisModal');
+            const content = document.getElementById('fullAnalysisContent');
+            const suggestionsData = getPhilippinesPepperSuggestions();
+            
+            if (!modal || !content) return;
+            
+            // Build HTML for all varieties
+            let html = '';
+            const varieties = ['Green', 'Red', 'Yellow', 'Orange', 'Mini'];
+            
+            varieties.forEach((varietyKey, index) => {
+                const suggestion = suggestionsData[varietyKey];
+                if (!suggestion) return;
+                
+                html += `
+                    <div class="variety-card" style="animation-delay: ${index * 0.1}s">
+                        <div class="variety-header">
+                            <span class="variety-number">${index + 1}️⃣</span>
+                            <div class="variety-title-group">
+                                <h3>
+                                    <span class="variety-emoji-large">${suggestion.emoji}</span>
+                                    ${suggestion.name}
+                                </h3>
+                                ${suggestion.tagalog ? `<p class="variety-tagalog">${suggestion.tagalog}</p>` : ''}
+                            </div>
+                        </div>
+                        <div class="variety-content">
+                            <div class="variety-taste">
+                                <strong>Taste:</strong> ${suggestion.taste}
+                            </div>
+                            <div class="variety-best-for">
+                                <strong>Best For:</strong>
+                                <ul>
+                                    ${suggestion.bestFor.map(use => `<li>${use}</li>`).join('')}
+                                </ul>
+                            </div>
+                            <div class="variety-other-uses">
+                                <strong>Other Uses:</strong>
+                                <ul>
+                                    ${suggestion.otherUses.map(use => `<li>${use}</li>`).join('')}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            content.innerHTML = html;
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden'; // Prevent background scrolling
+        };
+
+        window.closeFullAnalysisModal = function() {
+            const modal = document.getElementById('fullAnalysisModal');
+            if (modal) {
+                modal.style.display = 'none';
+                document.body.style.overflow = ''; // Restore scrolling
+            }
+        };
+
+        // Close modal when clicking outside
+        document.addEventListener('DOMContentLoaded', () => {
+            const modal = document.getElementById('fullAnalysisModal');
+            if (modal) {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        closeFullAnalysisModal();
+                    }
+                });
+            }
+            
+            // Close modal on Escape key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    const modal = document.getElementById('fullAnalysisModal');
+                    if (modal && modal.style.display === 'flex') {
+                        closeFullAnalysisModal();
+                    }
+                }
+            });
+        });
 
